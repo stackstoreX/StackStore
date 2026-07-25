@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
+    <title>Stack Store - اشتراكات بريميوم</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <base target="_blank">
+<base target="_blank">
+<base target="_blank">
+</head>
+<body>
+    <div class="bg-anim"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="logo-section">
+            <img src="logo.png" alt="Stack Store Logo" onerror="this.style.display='none'">
+            <div>
+                <h1>Stack Store</h1>
+                <span>اشتراكات بريميوم بأفضل الأسعار</span>
+            </div>
+        </div>
+        <div class="admin-badge" id="adminBadge">
+            <span>👑</span>
+            <span>أنت الأدمن</span>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav-tabs">
+        <button class="nav-tab active" id="tabProducts" data-section="products">
+            <span class="icon">🛒</span>
+            <span>المنتجات</span>
+        </button>
+        <button class="nav-tab" id="tabDeliveries" data-section="deliveries">
+            <span class="icon">📦</span>
+            <span>التسليمات</span>
+        </button>
+        <button class="nav-tab" id="tabReviews" data-section="reviews">
+            <span class="icon">⭐</span>
+            <span>الآراء</span>
+        </button>
+        <button class="nav-tab" id="tabAdmin" data-section="admin">
+            <span class="icon">🔐</span>
+            <span>لوحة الأدمن</span>
+        </button>
+    </nav>
+
+    <!-- ====== SECTION: PRODUCTS ====== -->
+    <section id="products" class="section active">
+        <!-- Hero -->
+        <div class="hero">
+            <div class="hero-content">
+                <div class="hero-logo">
+                    <img src="logo.png" alt="Stack Store" onerror="this.style.display='none'">
+                </div>
+                <h2>اشتراكاتك المفضلة بأرخص الأسعار</h2>
+                <p>Netflix, Spotify, YouTube, VPN وأكتر — تفعيل فوري وضمان كامل</p>
+                <div class="trust-badges">
+                    <span class="trust-badge">⚡ تفعيل فوري</span>
+                    <span class="trust-badge">🛡️ ضمان 100%</span>
+                    <span class="trust-badge">💬 دعم 24/7</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-bar">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="productSearch" placeholder="ابحث عن منتج...">
+            </div>
+            <div class="filter-tabs" id="filterTabsContainer">
+                <!-- Filters built dynamically from admin categories -->
+            </div>
+        </div>
+
+        <!-- Products Grid -->
+        <div id="productsGrid">
+            <div class="products-skeleton">
+                <div class="skeleton-card"><div class="skeleton img"></div><div class="skeleton title"></div><div class="skeleton price"></div></div>
+                <div class="skeleton-card"><div class="skeleton img"></div><div class="skeleton title"></div><div class="skeleton price"></div></div>
+                <div class="skeleton-card"><div class="skeleton img"></div><div class="skeleton title"></div><div class="skeleton price"></div></div>
+                <div class="skeleton-card"><div class="skeleton img"></div><div class="skeleton title"></div><div class="skeleton price"></div></div>
+            </div>
+        </div>
+
+        <!-- Why Choose Us -->
+        <div class="why-us">
+            <h3 class="section-title">✨ لماذا تختار Stack Store؟</h3>
+            <div class="features-grid">
+                <div class="feature-box">
+                    <div class="feature-icon">⚡</div>
+                    <h4>تفعيل فوري</h4>
+                    <p>استلم اشتراكك خلال دقائق من الدفع، بدون انتظار</p>
+                </div>
+                <div class="feature-box">
+                    <div class="feature-icon">🛡️</div>
+                    <h4>ضمان كامل</h4>
+                    <p>ضمان استرداد المبلغ إذا حصل أي مشكلة في الاشتراك</p>
+                </div>
+                <div class="feature-box">
+                    <div class="feature-icon">💰</div>
+                    <h4>أرخص الأسعار</h4>
+                    <p>أسعار تنافسية مع خصومات مستمرة على المدد الطويلة</p>
+                </div>
+                <div class="feature-box">
+                    <div class="feature-icon">🔒</div>
+                    <h4>حسابات آمنة</h4>
+                    <p>اشتراكات أصلية 100% بدون مخاطر أو حظر</p>
+                </div>
+                <div class="feature-box">
+                    <div class="feature-icon">📞</div>
+                    <h4>دعم 24/7</h4>
+                    <p>فريق دعم جاهز يساعدك في أي وقت تحتاجه</p>
+                </div>
+                <div class="feature-box">
+                    <div class="feature-icon">🔄</div>
+                    <h4>تجديد سهل</h4>
+                    <p>تجديد الاشتراك بنفس الحساب بسهولة وبدون فقدان البيانات</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- How to Order -->
+        <div class="how-to-order">
+            <h3 class="section-title">🛒 خطوات الطلب</h3>
+            <div class="steps-grid">
+                <div class="step-box">
+                    <div class="step-number">1</div>
+                    <div class="step-icon">🔍</div>
+                    <h4>اختر منتجك</h4>
+                    <p>تصفح المنتجات واختار اللي يناسبك</p>
+                </div>
+                <div class="step-arrow">➡️</div>
+                <div class="step-box">
+                    <div class="step-number">2</div>
+                    <div class="step-icon">💬</div>
+                    <h4>تواصل عبر واتساب</h4>
+                    <p>اضغط "اطلب الآن" وابعت لنا تفاصيل طلبك</p>
+                </div>
+                <div class="step-arrow">➡️</div>
+                <div class="step-box">
+                    <div class="step-number">3</div>
+                    <div class="step-icon">💳</div>
+                    <h4>ادفع بسهولة</h4>
+                    <p>ادفع بأي طريقة تناسبك (فودافون كاش، إنستا باي، الخ)</p>
+                </div>
+                <div class="step-arrow">➡️</div>
+                <div class="step-box">
+                    <div class="step-number">4</div>
+                    <div class="step-icon">🎉</div>
+                    <h4>استلم فوراً</h4>
+                    <p>استلم الاشتراك مفعل وجاهز للاستخدام</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQ -->
+        <div class="faq-section">
+            <h3 class="section-title">❓ الأسئلة الشائعة</h3>
+            <div class="faq-list">
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>الاشتراكات أصلية ولا مشروكة؟</span>
+                        <span class="faq-toggle">➕</span>
+                    </div>
+                    <div class="faq-answer">
+                        <p>كل الاشتراكات أصلية 100%. عندك خيارين: تفعيل على حسابك الشخصي، أو حساب جاهز نعمله لك. كل الاشتراكات مضمونة وآمنة.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>كم مدة التفعيل؟</span>
+                        <span class="faq-toggle">➕</span>
+                    </div>
+                    <div class="faq-answer">
+                        <p>التفعيل فوري في أغلب الأحيان خلال 5-15 دقيقة من تأكيد الدفع. في حالات نادرة ممكن ياخد ساعة كحد أقصى.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>لو حصل مشكلة في الاشتراك؟</span>
+                        <span class="faq-toggle">➕</span>
+                    </div>
+                    <div class="faq-answer">
+                        <p>عندك ضمان كامل طول فترة الاشتراك. لو واجهت أي مشكلة، تواصل معانا فوراً وهنحلها أو نرجعلك فلوسك.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>طرق الدفع المتاحة؟</span>
+                        <span class="faq-toggle">➕</span>
+                    </div>
+                    <div class="faq-answer">
+                        <p>فودافون كاش، إنستا باي، فوري، أورانج كاش، واتساب باي، وتحويل بنكي. كل الطرق متاحة وسهلة.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>ممكن أجدد نفس الاشتراك؟</span>
+                        <span class="faq-toggle">➕</span>
+                    </div>
+                    <div class="faq-answer">
+                        <p>أكيد! تقدر تجدد نفس الاشتراك قبل ما يخلص بيومين عشان ما تفقدش بياناتك أو قوائم التشغيل.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="site-footer">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <img src="logo.png" alt="Stack Store" onerror="this.style.display='none'">
+                    <h3>Stack Store</h3>
+                    <p>أفضل مكان لشراء الاشتراكات الرقمية بأمان وثقة</p>
+                </div>
+                <div class="footer-links">
+                    <h4>روابط سريعة</h4>
+                    <a onclick="showSection('products')">🛒 المنتجات</a>
+                    <a onclick="showSection('deliveries')">📦 التسليمات</a>
+                    <a onclick="showSection('reviews')">⭐ الآراء</a>
+                </div>
+                <div class="footer-contact">
+                    <h4>تواصل معنا</h4>
+                    <p>📱 واتساب: متاح 24/7</p>
+                    <p>⏰ مواعيد العمل: طول اليوم</p>
+                    <p>🚀 التسليم: فوري</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2026 Stack Store. جميع الحقوق محفوظة.</p>
+                <p class="footer-slogan">💙 تسوق بذكاء، وفر أكتر</p>
+            </div>
+        </footer>
+    </section>
+
+    <!-- ====== SECTION: PRODUCT DETAIL ====== -->
+    <section id="productDetail" class="section">
+        <button class="back-btn" onclick="showSection('products')">
+            <span>⬅️</span>
+            <span>رجوع للمنتجات</span>
+        </button>
+        <div id="productDetailContent"></div>
+
+        <!-- Product Reviews -->
+        <div class="card product-reviews-card">
+            <div class="card-title">
+                <span class="icon">💬</span>
+                آراء العملاء عن هذا المنتج
+            </div>
+            <div id="productReviewsList"></div>
+            <div class="add-review-public">
+                <h4>✍️ أضف رأيك</h4>
+                <div class="form-group">
+                    <input type="text" id="reviewerName" placeholder="اسمك (اختياري)">
+                </div>
+                <div class="form-group">
+                    <div class="star-rating" id="starRating">
+                        <span data-rating="1">⭐</span>
+                        <span data-rating="2">⭐</span>
+                        <span data-rating="3">⭐</span>
+                        <span data-rating="4">⭐</span>
+                        <span data-rating="5">⭐</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <textarea id="reviewerText" placeholder="اكتب رأيك في المنتج..."></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="submitProductReview()" style="width:100%;justify-content:center;">
+                    <span>📤</span>
+                    <span>إرسال الرأي</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ====== SECTION: DELIVERIES ====== -->
+    <section id="deliveries" class="section">
+        <!-- Add Delivery Form (Admin Only) -->
+        <div class="admin-panel" id="addDeliveryForm">
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">📝</span>
+                    تسليم جديد
+                </div>
+                <div class="upload-grid">
+                    <div class="form-group">
+                        <label>💳 صورة الدفع</label>
+                        <div class="upload-area" id="paymentUpload">
+                            <input type="file" id="paymentFile" accept="image/*">
+                            <div class="upload-content">
+                                <div class="upload-icon">💳</div>
+                                <div class="upload-text">اضغط لرفع صورة الدفع</div>
+                            </div>
+                            <img class="upload-preview" id="paymentPreview" alt="معاينة الدفع">
+                        </div>
+                        <button class="upload-remove" id="paymentRemove">❌ إزالة الصورة</button>
+                    </div>
+                    <div class="form-group">
+                        <label>📤 صورة التسليم</label>
+                        <div class="upload-area" id="deliveryUpload">
+                            <input type="file" id="deliveryFile" accept="image/*">
+                            <div class="upload-content">
+                                <div class="upload-icon">📤</div>
+                                <div class="upload-text">اضغط لرفع صورة التسليم</div>
+                            </div>
+                            <img class="upload-preview" id="deliveryPreview" alt="معاينة التسليم">
+                        </div>
+                        <button class="upload-remove" id="deliveryRemove">❌ إزالة الصورة</button>
+                    </div>
+                </div>
+                <div class="form-group date-group" style="margin-top: 15px;">
+                    <label>
+                        <span>📅</span>
+                        <span>تاريخ التسليم</span>
+                        <span class="date-optional-badge">اختياري</span>
+                    </label>
+                    <div class="date-input-wrapper">
+                        <input type="text" id="deliveryDate" placeholder="اختر التاريخ..." readonly>
+                        <button type="button" class="date-picker-btn" id="btnOpenDatePicker" title="اختر التاريخ">
+                            <span>📆</span>
+                        </button>
+                        <div class="date-today-badge" id="dateTodayBadge">اليوم</div>
+                    </div>
+                    <p class="date-hint">
+                        <span>💡</span>
+                        لو سيبتها فاضية هيتم استخدام تاريخ اليوم تلقائياً
+                    </p>
+                </div>
+                <div class="form-group">
+                    <label>📝 ملاحظات (اختياري)</label>
+                    <textarea id="deliveryNotes" placeholder="أي ملاحظات إضافية..."></textarea>
+                </div>
+                <button class="btn btn-primary" id="btnSaveDelivery" style="width: 100%; justify-content: center;">
+                    <span>✅</span>
+                    <span>حفظ التسليم</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Deliveries List -->
+        <div id="deliveriesList">
+            <div class="empty-state">
+                <div class="icon">📦</div>
+                <h3>جاري التحميل...</h3>
+            </div>
+        </div>
+    </section>
+
+    <!-- ====== SECTION: REVIEWS ====== -->
+    <section id="reviews" class="section">
+        <!-- Add Review Form (Public - No Image) -->
+        <div class="card">
+            <div class="card-title">
+                <span class="icon">✍️</span>
+                أضف رأيك
+            </div>
+            <div class="form-group">
+                <label>👤 اسمك</label>
+                <input type="text" id="publicReviewerName" placeholder="اسمك (اختياري)">
+            </div>
+            <div class="form-group">
+                <label>⭐ التقييم</label>
+                <div class="star-rating" id="publicStarRating">
+                    <span data-rating="1">⭐</span>
+                    <span data-rating="2">⭐</span>
+                    <span data-rating="3">⭐</span>
+                    <span data-rating="4">⭐</span>
+                    <span data-rating="5">⭐</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>💬 رأيك</label>
+                <textarea id="publicReviewText" placeholder="اكتب رأيك في خدماتنا..."></textarea>
+            </div>
+            <button class="btn btn-success" id="btnSavePublicReview" style="width: 100%; justify-content: center;">
+                <span>📤</span>
+                <span>إرسال الرأي</span>
+            </button>
+        </div>
+
+        <!-- Reviews List -->
+        <div id="reviewsList">
+            <div class="empty-state">
+                <div class="icon">⭐</div>
+                <h3>جاري التحميل...</h3>
+            </div>
+        </div>
+    </section>
+
+    <!-- ====== SECTION: ADMIN ====== -->
+    <section id="admin" class="section">
+        <button class="back-btn" onclick="showSection('products')">
+            <span>⬅️</span>
+            <span>رجوع للرئيسية</span>
+        </button>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">🛒</div>
+                <div class="stat-number" id="statProducts">0</div>
+                <div class="stat-label">المنتجات</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📦</div>
+                <div class="stat-number" id="statDeliveries">0</div>
+                <div class="stat-label">التسليمات</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⭐</div>
+                <div class="stat-number" id="statReviews">0</div>
+                <div class="stat-label">الآراء</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">💰</div>
+                <div class="stat-number" id="statOrders">0</div>
+                <div class="stat-label">الطلبات</div>
+            </div>
+        </div>
+
+        <!-- Product Management -->
+        <div class="card">
+            <div class="card-title" style="justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span class="icon">🛒</span>
+                    إدارة المنتجات
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="openProductModal()">
+                    <span>➕</span>
+                    <span>منتج جديد</span>
+                </button>
+            </div>
+            <div id="adminProductsList"></div>
+        </div>
+
+        <!-- Category Management -->
+        <div class="card">
+            <div class="card-title" style="justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span class="icon">🏷️</span>
+                    إدارة الأقسام
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="openCategoryModal()">
+                    <span>➕</span>
+                    <span>قسم جديد</span>
+                </button>
+            </div>
+            <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:15px;">
+                💡 الأقسام هتظهر في الفلاتر والمنتجات. القسم "الكل" ثابت ومش هينفع تمسحه.
+            </p>
+            <div id="adminCategoriesList"></div>
+        </div>
+
+        <!-- Delivery Management -->
+        <div class="card">
+            <div class="card-title">
+                <span class="icon">📋</span>
+                كل التسليمات
+            </div>
+            <div id="adminDeliveriesList"></div>
+        </div>
+
+        <!-- Review Management -->
+        <div class="card">
+            <div class="card-title">
+                <span class="icon">⭐</span>
+                كل الآراء
+            </div>
+            <div id="adminReviewsList"></div>
+        </div>
+
+        <!-- Admin Settings -->
+        <div class="card">
+            <div class="card-title">
+                <span class="icon">⚙️</span>
+                إعدادات الأدمن
+            </div>
+            <button class="btn btn-danger" onclick="logoutAdmin()" style="width:100%;justify-content:center;">
+                <span>🚪</span>
+                <span>تسجيل الخروج من الأدمن</span>
+            </button>
+            <p style="color:var(--text-muted);font-size:0.85rem;margin-top:15px;text-align:center;">
+                ⚠️ لو سجلت خروج، هتحتاج تدخل الكود تاني من الجهاز دا
+            </p>
+        </div>
+    </section>
+
+    <!-- ====== ADMIN LOGIN OVERLAY ====== -->
+    <div class="admin-login-overlay" id="adminLoginOverlay">
+        <div class="admin-login-box">
+            <button class="back-btn" id="btnBackFromLogin" style="margin-bottom: 15px; width: 100%; justify-content: center;">
+                <span>⬅️</span>
+                <span>رجوع</span>
+            </button>
+            <div class="lock-icon">🔐</div>
+            <h2>دخول الأدمن</h2>
+            <p>أدخل كود الأدمن للوصول للوحة التحكم</p>
+            <input type="password" id="adminCodeInput" placeholder="••••••••" maxlength="20">
+            <button class="btn btn-primary" id="btnAdminLogin" style="width: 100%; justify-content: center;">
+                <span>🔓</span>
+                <span>دخول</span>
+            </button>
+            <p style="margin-top: 15px; font-size: 0.8rem; color: var(--text-muted);">
+                الجهاز اللي هيدخل الكود الصح هيتحفظ كأدمن دايماً
+            </p>
+        </div>
+    </div>
+
+    <!-- ====== PRODUCT MODAL (Add/Edit) ====== -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal-box product-modal-box">
+            <button class="modal-close" onclick="closeProductModal()">✕</button>
+            <h2 id="productModalTitle">منتج جديد</h2>
+            <div class="form-group">
+                <label>📛 اسم المنتج</label>
+                <input type="text" id="prodName" placeholder="مثال: Netflix Premium">
+            </div>
+            <div class="form-group">
+                <label>📝 الوصف</label>
+                <textarea id="prodDesc" placeholder="وصف المنتج..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>🖼️ صورة المنتج</label>
+                <div class="upload-area" id="productImageUpload">
+                    <input type="file" id="productImageFile" accept="image/*">
+                    <div class="upload-content">
+                        <div class="upload-icon">🖼️</div>
+                        <div class="upload-text">اضغط لرفع صورة المنتج</div>
+                    </div>
+                    <img class="upload-preview" id="productImagePreview" alt="معاينة">
+                </div>
+                <p style="color:var(--text-muted);font-size:0.8rem;margin-top:8px;text-align:center;">أو أدخل رابط الصورة:</p>
+                <input type="text" id="prodImageUrl" placeholder="https://..." style="margin-top:8px;">
+                <button class="upload-remove" id="productImageRemove">❌ إزالة الصورة</button>
+            </div>
+            <div class="form-group">
+                <label>🏷️ التصنيف</label>
+                <select id="prodCategory">
+                    <option value="streaming">بث (Streaming)</option>
+                    <option value="music">موسيقى</option>
+                    <option value="gaming">ألعاب</option>
+                    <option value="vpn">VPN</option>
+                    <option value="other">أخرى</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>💰 الأسعار والمدد</label>
+                <div id="pricesContainer">
+                    <div class="price-row">
+                        <input type="text" class="price-duration" placeholder="المدة" value="شهر">
+                        <input type="number" class="price-value" placeholder="السعر" value="">
+                        <input type="number" class="price-original" placeholder="السعر قبل" value="">
+                        <button class="btn btn-danger btn-sm" onclick="removePriceRow(this)">🗑️</button>
+                    </div>
+                </div>
+                <button class="btn btn-sm" onclick="addPriceRow()" style="margin-top:10px;background:var(--card);border:1px solid var(--border);">
+                    <span>➕</span>
+                    <span>إضافة مدة</span>
+                </button>
+            </div>
+            <div class="form-group">
+                <label>✨ المميزات (افصل بفاصلة)</label>
+                <input type="text" id="prodFeatures" placeholder="4K, 4 شاشات, بدون إعلانات">
+            </div>
+            <div class="form-group">
+                <label>📊 الحالة</label>
+                <select id="prodStatus">
+                    <option value="available">✅ متاح</option>
+                    <option value="out_of_stock">❌ نفذت الكمية</option>
+                    <option value="coming_soon">🔜 قريباً</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" id="btnSaveProduct" style="width:100%;justify-content:center;">
+                <span>💾</span>
+                <span>حفظ المنتج</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div class="modal-overlay" id="imageModal">
+        <button class="modal-close" id="btnModalClose">✕</button>
+        <img id="modalImage" src="" alt="صورة مكبرة">
+    </div>
+
+    <!-- Compression Overlay -->
+    <div class="compression-overlay" id="compressionOverlay">
+        <div class="spinner"></div>
+        <p id="compressionText">جاري ضغط الصور...</p>
+        <div class="progress-bar">
+            <div class="progress-bar-fill" id="compressionProgress"></div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Custom Date Picker Modal -->
+    <div class="date-picker-overlay" id="datePickerOverlay">
+        <div class="date-picker-box">
+            <div class="date-picker-header">
+                <button class="date-nav-btn" id="datePrevMonth">‹</button>
+                <div class="date-picker-title" id="datePickerTitle">يوليو 2026</div>
+                <button class="date-nav-btn" id="dateNextMonth">›</button>
+            </div>
+            <div class="date-picker-days">
+                <span>أحد</span><span>إثنين</span><span>ثلاثاء</span><span>أربعاء</span><span>خميس</span><span>جمعة</span><span>سبت</span>
+            </div>
+            <div class="date-picker-grid" id="datePickerGrid"></div>
+            <div class="date-picker-footer">
+                <button class="date-picker-clear" id="datePickerClear">مسح</button>
+                <button class="date-picker-today" id="datePickerToday">اليوم</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating WhatsApp Button -->
+    <a href="https://wa.me/201000000000" class="floating-whatsapp" id="floatingWhatsapp" target="_blank">
+        <span>💬</span>
+    </a>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

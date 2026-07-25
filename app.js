@@ -1,0 +1,1467 @@
+// ====== STACK STORE - APP.JS ======
+// Complete Store with Products, Deliveries, Reviews & Admin
+
+const ADMIN_CODE = 'STACK9';
+const ADMIN_KEY = 'stackstore_admin_device';
+const WHATSAPP_NUMBER = '201000000000';
+
+const SUPABASE_URL = 'https://vakfdtxobojpvkiiscdx.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZha2ZkdHhvYm9qcHZraWlzY2R4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NjUyNDUsImV4cCI6MjEwMDI0MTI0NX0.NCbE_nETiFChKsFk4IYFPG3_dMslNRlVK0kN1ITrXXQ';
+
+let supabaseClient = null;
+let products = [];
+let deliveries = [];
+let reviews = [];
+let categories = [];
+const defaultCategories = [
+    { id: 'all', name: 'الكل', icon: '🏠' },
+    { id: 'streaming', name: 'بث', icon: '📺' },
+    { id: 'music', name: 'موسيقى', icon: '🎵' },
+    { id: 'gaming', name: 'ألعاب', icon: '🎮' },
+    { id: 'vpn', name: 'VPN', icon: '🔒' },
+    { id: 'other', name: 'أخرى', icon: '📦' }
+];
+let isAdmin = false;
+let isLoading = true;
+let currentProduct = null;
+let editingProductId = null;
+let selectedRating = 0;
+let publicSelectedRating = 0;
+let currentFilter = 'all';
+
+const PLACEHOLDER_IMG = 'https://via.placeholder.com/400x250/1e293b/94a3b8?text=No+Image';
+
+const sampleProducts = [
+    {
+        id: 1,
+        name: 'Netflix Premium',
+        description: 'اشتراك Netflix بريميوم 4K UHD مع دعم 4 شاشات في نفس الوقت. تفعيل فوري على الإيميل الشخصي أو حساب جاهز.',
+        image: 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=600',
+        category: 'streaming',
+        status: 'available',
+        prices: [
+            { duration: 'شهر', price: 45, originalPrice: 70 },
+            { duration: '3 شهور', price: 120, originalPrice: 210 },
+            { duration: '6 شهور', price: 220, originalPrice: 420 },
+            { duration: 'سنة', price: 400, originalPrice: 840 }
+        ],
+        features: ['4K UHD', '4 شاشات', 'بدون إعلانات', 'تفعيل فوري', 'دعم جميع الأجهزة'],
+        created_at: new Date().toISOString()
+    },
+    {
+        id: 2,
+        name: 'Spotify Premium',
+        description: 'اشتراك Spotify بريميوم بدون إعلانات مع جودة صوت عالية وتخطي غير محدود.',
+        image: 'https://images.unsplash.com/photo-1614680376593-902f74cf0d41?w=600',
+        category: 'music',
+        status: 'available',
+        prices: [
+            { duration: 'شهر', price: 35, originalPrice: 50 },
+            { duration: '3 شهور', price: 90, originalPrice: 150 },
+            { duration: 'سنة', price: 300, originalPrice: 600 }
+        ],
+        features: ['بدون إعلانات', 'جودة عالية', 'تخطي غير محدود', 'تحميل Offline'],
+        created_at: new Date().toISOString()
+    },
+    {
+        id: 3,
+        name: 'YouTube Premium',
+        description: 'YouTube Premium بدون إعلانات مع YouTube Music وتحميل الفيديوهات.',
+        image: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=600',
+        category: 'streaming',
+        status: 'available',
+        prices: [
+            { duration: 'شهر', price: 40, originalPrice: 60 },
+            { duration: '3 شهور', price: 100, originalPrice: 180 },
+            { duration: 'سنة', price: 350, originalPrice: 720 }
+        ],
+        features: ['بدون إعلانات', 'YouTube Music', 'تحميل Offline', 'تشغيل بالخلفية'],
+        created_at: new Date().toISOString()
+    },
+    {
+        id: 4,
+        name: 'ExpressVPN',
+        description: 'ExpressVPN سريع وآمن مع سيرفرات في 94 دولة ودعم جميع الأجهزة.',
+        image: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=600',
+        category: 'vpn',
+        status: 'available',
+        prices: [
+            { duration: 'شهر', price: 50, originalPrice: 80 },
+            { duration: '3 شهور', price: 130, originalPrice: 240 },
+            { duration: 'سنة', price: 450, originalPrice: 960 }
+        ],
+        features: ['سيرفرات 94 دولة', 'سرعة فائقة', 'تشفير AES-256', '5 أجهزة'],
+        created_at: new Date().toISOString()
+    },
+    {
+        id: 5,
+        name: 'Xbox Game Pass Ultimate',
+        description: 'Xbox Game Pass Ultimate مع مكتبة ألعاب ضخمة و Xbox Live Gold.',
+        image: 'https://images.unsplash.com/photo-1605901309584-818e25960a8f?w=600',
+        category: 'gaming',
+        status: 'out_of_stock',
+        prices: [
+            { duration: 'شهر', price: 55, originalPrice: 85 },
+            { duration: '3 شهور', price: 150, originalPrice: 255 }
+        ],
+        features: ['100+ لعبة', 'Xbox Live Gold', 'EA Play', 'Cloud Gaming'],
+        created_at: new Date().toISOString()
+    },
+    {
+        id: 6,
+        name: 'ChatGPT Plus',
+        description: 'اشتراك ChatGPT Plus مع GPT-4 و أدوات متقدمة و سرعة أعلى.',
+        image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600',
+        category: 'other',
+        status: 'coming_soon',
+        prices: [
+            { duration: 'شهر', price: 60, originalPrice: 100 }
+        ],
+        features: ['GPT-4', 'أدوات متقدمة', 'سرعة أعلى', 'أولوية الوصول'],
+        created_at: new Date().toISOString()
+    }
+];
+
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('Stack Store initializing...');
+    isAdmin = localStorage.getItem(ADMIN_KEY) === 'true';
+    initSupabase();
+    setupEventListeners();
+    setupStarRatings();
+    setupFilters();
+    checkAdminStatus();
+    await loadData();
+    console.log('Stack Store ready!');
+});
+
+function initSupabase() {
+    try {
+        if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('Supabase client initialized');
+        } else {
+            console.warn('Supabase library not loaded yet, will retry...');
+            setTimeout(initSupabase, 500);
+        }
+    } catch (e) {
+        console.error('Supabase init failed:', e);
+        supabaseClient = null;
+    }
+}
+
+async function loadData() {
+    isLoading = true;
+    renderSkeletons();
+    if (!supabaseClient) await waitForSupabase();
+
+    var storedProducts = localStorage.getItem('stackstore_products');
+    if (storedProducts) {
+        products = JSON.parse(storedProducts);
+    } else {
+        products = sampleProducts;
+        localStorage.setItem('stackstore_products', JSON.stringify(products));
+    }
+
+    var storedCategories = localStorage.getItem('stackstore_categories');
+    if (storedCategories) {
+        categories = JSON.parse(storedCategories);
+    } else {
+        categories = defaultCategories;
+        localStorage.setItem('stackstore_categories', JSON.stringify(categories));
+    }
+
+    if (supabaseClient) {
+        try {
+            var res = await supabaseClient.from('products').select('*');
+            if (res.data && res.data.length > 0) products = res.data;
+        } catch (e) { console.log('Using local products'); }
+    }
+
+    if (supabaseClient) {
+        try {
+            var delRes = await supabaseClient.from('deliveries').select('*').order('created_at', { ascending: false });
+            if (delRes.data) deliveries = delRes.data;
+        } catch (e) {
+            deliveries = JSON.parse(localStorage.getItem('stackstore_deliveries')) || [];
+        }
+    } else {
+        deliveries = JSON.parse(localStorage.getItem('stackstore_deliveries')) || [];
+    }
+
+    if (supabaseClient) {
+        try {
+            var revRes = await supabaseClient.from('reviews').select('*').order('created_at', { ascending: false });
+            if (revRes.data) reviews = revRes.data;
+        } catch (e) {
+            reviews = JSON.parse(localStorage.getItem('stackstore_reviews')) || [];
+        }
+    } else {
+        reviews = JSON.parse(localStorage.getItem('stackstore_reviews')) || [];
+    }
+
+    isLoading = false;
+    renderProducts();
+    renderDeliveries();
+    renderReviews();
+    updateStats();
+}
+
+async function waitForSupabase() {
+    var retries = 0;
+    while (!supabaseClient && retries < 10) {
+        await new Promise(function(r) { setTimeout(r, 300); });
+        retries++;
+    }
+}
+
+function renderSkeletons() {
+    document.getElementById('productsGrid').innerHTML =
+        '<div class="products-skeleton">' +
+        '<div class="skeleton-card"><div class="skeleton img"></div><div class="skeleton title"></div><div class="skeleton price"></div></div>' +
+        '<div class="skeleton-card"><div class="skeleton img"></div><div class="skeleton title"></div><div class="skeleton price"></div></div>' +
+        '<div class="skeleton-card"><div class="skeleton img"></div><div class="skeleton title"></div><div class="skeleton price"></div></div>' +
+        '<div class="skeleton-card"><div class="skeleton img"></div><div class="skeleton title"></div><div class="skeleton price"></div></div>' +
+        '</div>';
+}
+
+function setupEventListeners() {
+    setupUpload('paymentUpload', 'paymentFile', 'paymentPreview', 'paymentUpload', 'paymentRemove');
+    setupUpload('deliveryUpload', 'deliveryFile', 'deliveryPreview', 'deliveryUpload', 'deliveryRemove');
+    setupUpload('reviewUpload', 'reviewFile', 'reviewPreview', 'reviewUpload', 'reviewRemove');
+    setupUpload('productImageUpload', 'productImageFile', 'productImagePreview', 'productImageUpload', 'productImageRemove');
+
+    document.querySelectorAll('.nav-tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            var section = this.getAttribute('data-section');
+            if (section === 'admin') { openAdminLogin(); }
+            else { showSection(section); }
+        });
+    });
+
+    document.getElementById('productSearch').addEventListener('input', function() { renderProducts(); });
+    document.getElementById('btnSaveDelivery').addEventListener('click', addDelivery);
+    document.getElementById('btnSavePublicReview').addEventListener('click', addPublicReview);
+    document.getElementById('btnSaveProduct').addEventListener('click', saveProduct);
+
+    document.getElementById('btnAdminLogin').addEventListener('click', checkAdminCode);
+    document.getElementById('adminCodeInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') checkAdminCode();
+    });
+    document.getElementById('btnBackFromLogin').addEventListener('click', function() {
+        document.getElementById('adminLoginOverlay').classList.remove('active');
+    });
+
+    document.getElementById('btnModalClose').addEventListener('click', closeModal);
+    document.getElementById('imageModal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+    document.getElementById('productModal').addEventListener('click', function(e) {
+        if (e.target === this) closeProductModal();
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            document.getElementById('adminLoginOverlay').classList.remove('active');
+            document.getElementById('imageModal').classList.remove('active');
+            document.getElementById('productModal').classList.remove('active');
+            document.getElementById('datePickerOverlay').classList.remove('active');
+        }
+    });
+
+    setupDatePicker();
+}
+
+function setupUpload(uploadId, fileId, previewId, uploadAreaId, removeId) {
+    var uploadArea = document.getElementById(uploadId);
+    var fileInput = document.getElementById(fileId);
+    var removeBtn = document.getElementById(removeId);
+    if (!uploadArea || !fileInput) return;
+
+    uploadArea.addEventListener('click', function(e) {
+        if (e.target !== removeBtn) fileInput.click();
+    });
+    fileInput.addEventListener('change', function() {
+        handleImageUpload(this, previewId, uploadAreaId, removeId);
+    });
+    if (removeBtn) {
+        removeBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            removeImage(fileId, previewId, uploadAreaId, removeId);
+        });
+    }
+}
+
+function setupStarRatings() {
+    setupStarRating('starRating', function(r) { selectedRating = r; });
+    setupStarRating('publicStarRating', function(r) { publicSelectedRating = r; });
+}
+
+function setupStarRating(containerId, callback) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+    var stars = container.querySelectorAll('span');
+    stars.forEach(function(star) {
+        star.addEventListener('click', function() {
+            var rating = parseInt(this.getAttribute('data-rating'));
+            callback(rating);
+            updateStarDisplay(containerId, rating);
+        });
+        star.addEventListener('mouseenter', function() {
+            var rating = parseInt(this.getAttribute('data-rating'));
+            updateStarDisplay(containerId, rating);
+        });
+    });
+    container.addEventListener('mouseleave', function() {
+        var currentRating = containerId === 'starRating' ? selectedRating : publicSelectedRating;
+        updateStarDisplay(containerId, currentRating);
+    });
+}
+
+function updateStarDisplay(containerId, rating) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+    var stars = container.querySelectorAll('span');
+    stars.forEach(function(star, index) {
+        if (index < rating) {
+            star.classList.add('active');
+            star.style.filter = 'grayscale(0)';
+            star.style.opacity = '1';
+        } else {
+            star.classList.remove('active');
+            star.style.filter = 'grayscale(1)';
+            star.style.opacity = '0.3';
+        }
+    });
+}
+
+function setupFilters() {
+    var container = document.getElementById('filterTabsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    categories.forEach(function(cat) {
+        var btn = document.createElement('button');
+        btn.className = 'filter-tab' + (cat.id === currentFilter ? ' active' : '');
+        btn.setAttribute('data-filter', cat.id);
+        btn.innerHTML = (cat.icon ? cat.icon + ' ' : '') + escapeHtml(cat.name);
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active'); });
+            this.classList.add('active');
+            currentFilter = this.getAttribute('data-filter');
+            renderProducts();
+        });
+        container.appendChild(btn);
+    });
+}
+
+function renderProducts() {
+    var container = document.getElementById('productsGrid');
+    var search = document.getElementById('productSearch').value.toLowerCase();
+
+    var filtered = products.filter(function(p) {
+        var matchesSearch = p.name.toLowerCase().includes(search) || (p.description || '').toLowerCase().includes(search);
+        var matchesFilter = currentFilter === 'all' || p.category === currentFilter;
+        return matchesSearch && matchesFilter;
+    });
+
+    if (filtered.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">🛒</div><h3>لا توجد منتجات</h3><p>جرب تغير الفلتر أو البحث</p></div>';
+        return;
+    }
+
+    var html = '<div class="products-grid">';
+    filtered.forEach(function(p) {
+        var minPrice = p.prices && p.prices.length > 0 ? Math.min.apply(null, p.prices.map(function(x) { return x.price; })) : 0;
+        var statusClass = p.status || 'available';
+        var statusText = statusClass === 'available' ? '✅ متاح' : statusClass === 'out_of_stock' ? '❌ نفذت الكمية' : '🔜 قريباً';
+        var statusBadgeClass = 'status-badge ' + statusClass;
+        var imgSrc = p.image || PLACEHOLDER_IMG;
+
+        html += '<div class="product-card" onclick="showProductDetail(' + p.id + ')">' +
+            '<img class="product-image" src="' + imgSrc + '" alt="' + p.name + '" loading="lazy" onerror="this.src=PLACEHOLDER_IMG">' +
+            '<div class="product-body">' +
+            '<div class="product-name">' + escapeHtml(p.name) + '</div>' +
+            '<div class="product-desc">' + escapeHtml(p.description) + '</div>' +
+            '<div class="product-footer">' +
+            '<div class="product-price">يبدأ من ' + minPrice + ' ج.م</div>' +
+            '<span class="' + statusBadgeClass + '">' + statusText + '</span>' +
+            '</div></div>' +
+            '<div class="view-btn">🔍 عرض التفاصيل</div>' +
+            '</div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function showProductDetail(productId) {
+    var p = products.find(function(x) { return x.id === productId; });
+    if (!p) return;
+    currentProduct = p;
+
+    var statusClass = p.status || 'available';
+    var statusText = statusClass === 'available' ? '✅ متاح' : statusClass === 'out_of_stock' ? '❌ نفذت الكمية' : '🔜 قريباً';
+    var imgSrc = p.image || PLACEHOLDER_IMG;
+
+    var pricesHtml = '';
+    if (p.prices && p.prices.length > 0) {
+        pricesHtml = '<table class="prices-table"><thead><tr><th>المدة</th><th>السعر</th><th>السعر قبل</th><th>الخصم</th></tr></thead><tbody>';
+        p.prices.forEach(function(pr) {
+            var discount = pr.originalPrice ? Math.round((1 - pr.price / pr.originalPrice) * 100) : 0;
+            pricesHtml += '<tr>' +
+                '<td>' + escapeHtml(pr.duration) + '</td>' +
+                '<td class="sale-price">' + pr.price + ' ج.م</td>' +
+                '<td class="original-price">' + (pr.originalPrice || '-') + ' ج.م</td>' +
+                '<td>' + (discount > 0 ? '<span class="discount-badge">-' + discount + '%</span>' : '-') + '</td>' +
+                '</tr>';
+        });
+        pricesHtml += '</tbody></table>';
+    }
+
+    var featuresHtml = '';
+    if (p.features && p.features.length > 0) {
+        featuresHtml = '<div class="detail-features">';
+        p.features.forEach(function(f) {
+            featuresHtml += '<span class="feature-tag">✨ ' + escapeHtml(f) + '</span>';
+        });
+        featuresHtml += '</div>';
+    }
+
+    var orderDisabled = p.status !== 'available' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '';
+    var orderText = p.status === 'available' ? '🛒 اطلب الآن عبر واتساب' : '⛔ غير متاح حالياً';
+
+    var html = '<div class="card">' +
+        '<div class="product-detail-header">' +
+        '<div class="product-detail-image">' +
+        '<img src="' + imgSrc + '" alt="' + p.name + '" onerror="this.src=PLACEHOLDER_IMG">' +
+        '</div>' +
+        '<div class="product-detail-info">' +
+        '<h2>' + escapeHtml(p.name) + ' <span class="status-badge ' + statusClass + '">' + statusText + '</span></h2>' +
+        '<p class="detail-desc">' + escapeHtml(p.description) + '</p>' +
+        featuresHtml +
+        '</div></div>' +
+        '<div class="card-title"><span class="icon">💰</span>الأسعار والمدد</div>' +
+        pricesHtml +
+        '<button class="order-btn" ' + orderDisabled + ' onclick="orderProduct(' + p.id + ')">' + orderText + '</button>' +
+        '</div>';
+
+    document.getElementById('productDetailContent').innerHTML = html;
+    renderProductReviews();
+    showSection('productDetail');
+}
+
+function orderProduct(productId) {
+    var p = products.find(function(x) { return x.id === productId; });
+    if (!p || p.status !== 'available') return;
+    var minPrice = p.prices && p.prices.length > 0 ? Math.min.apply(null, p.prices.map(function(x) { return x.price; })) : 0;
+    var msg = 'مرحباً Stack Store!%0A%0Aأنا مهتم بشراء: ' + encodeURIComponent(p.name) + '%0Aالسعر يبدأ من: ' + minPrice + ' ج.م%0A%0Aأرجو التواصل معي للتفاصيل.';
+    window.open('https://wa.me/' + WHATSAPP_NUMBER + '?text=' + msg, '_blank');
+}
+
+function renderProductReviews() {
+    var container = document.getElementById('productReviewsList');
+    if (!currentProduct) return;
+
+    var productReviews = reviews.filter(function(r) { return r.product_id === currentProduct.id; });
+
+    if (productReviews.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">لا توجد آراء بعد عن هذا المنتج. كن أول من يقيم! ⭐</p>';
+        return;
+    }
+
+    var html = '<div class="reviews-grid">';
+    productReviews.forEach(function(r) {
+        var stars = '';
+        for (var i = 1; i <= 5; i++) {
+            stars += i <= (r.rating || 0) ? '⭐' : '☆';
+        }
+        var deleteBtn = isAdmin ? '<button class="delete-btn" onclick="deleteReview(' + r.id + ')">🗑️ مسح</button>' : '';
+        html += '<div class="review-card">' + deleteBtn +
+            '<div class="review-header">' +
+            '<span class="reviewer-name">' + escapeHtml(r.name || 'عميل') + '</span>' +
+            '<span class="review-date">' + formatDate(r.created_at) + '</span>' +
+            '</div>' +
+            '<div class="review-rating">' + stars + '</div>' +
+            '<div class="review-text">' + escapeHtml(r.text) + '</div>' +
+            '</div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function submitProductReview() {
+    var name = document.getElementById('reviewerName').value.trim() || 'عميل';
+    var text = document.getElementById('reviewerText').value.trim();
+    if (!text) { showToast('❌ اكتب رأيك الأول!', 'error'); return; }
+    if (selectedRating === 0) { showToast('❌ اختار التقييم بالنجوم!', 'error'); return; }
+    if (!currentProduct) return;
+
+    var review = {
+        id: Date.now(),
+        product_id: currentProduct.id,
+        name: name,
+        text: text,
+        rating: selectedRating,
+        created_at: new Date().toISOString()
+    };
+
+    reviews.unshift(review);
+    localStorage.setItem('stackstore_reviews', JSON.stringify(reviews));
+
+    document.getElementById('reviewerName').value = '';
+    document.getElementById('reviewerText').value = '';
+    selectedRating = 0;
+    updateStarDisplay('starRating', 0);
+
+    renderProductReviews();
+    renderReviews();
+    updateStats();
+    showToast('✅ تم إرسال رأيك بنجاح! شكراً لك ⭐', 'success');
+}
+
+function openProductModal(productId) {
+    editingProductId = productId || null;
+    var title = document.getElementById('productModalTitle');
+    title.textContent = productId ? 'تعديل منتج' : 'منتج جديد';
+
+    if (productId) {
+        var p = products.find(function(x) { return x.id === productId; });
+        if (!p) return;
+        document.getElementById('prodName').value = p.name;
+        document.getElementById('prodDesc').value = p.description || '';
+        document.getElementById('prodImageUrl').value = p.image || '';
+        var catSelect = document.getElementById('prodCategory');
+        catSelect.innerHTML = '';
+        categories.forEach(function(cat) {
+            if (cat.id === 'all') return;
+            var opt = document.createElement('option');
+            opt.value = cat.id;
+            opt.textContent = (cat.icon ? cat.icon + ' ' : '') + cat.name;
+            catSelect.appendChild(opt);
+        });
+        catSelect.value = p.category || (categories[1] ? categories[1].id : 'other');
+        document.getElementById('prodStatus').value = p.status || 'available';
+        document.getElementById('prodFeatures').value = p.features ? p.features.join(', ') : '';
+
+        var pricesContainer = document.getElementById('pricesContainer');
+        pricesContainer.innerHTML = '';
+        if (p.prices && p.prices.length > 0) {
+            p.prices.forEach(function(pr) {
+                addPriceRow(pr.duration, pr.price, pr.originalPrice);
+            });
+        } else {
+            addPriceRow();
+        }
+
+        if (p.image) {
+            document.getElementById('productImagePreview').src = p.image;
+            document.getElementById('productImagePreview').classList.add('show');
+            document.getElementById('productImageUpload').classList.add('has-image');
+            document.getElementById('productImageUpload').querySelector('.upload-content').style.display = 'none';
+            document.getElementById('productImageRemove').classList.add('show');
+        }
+    } else {
+        document.getElementById('prodName').value = '';
+        document.getElementById('prodDesc').value = '';
+        document.getElementById('prodImageUrl').value = '';
+        var catSelect = document.getElementById('prodCategory');
+        catSelect.innerHTML = '';
+        categories.forEach(function(cat) {
+            if (cat.id === 'all') return;
+            var opt = document.createElement('option');
+            opt.value = cat.id;
+            opt.textContent = (cat.icon ? cat.icon + ' ' : '') + cat.name;
+            catSelect.appendChild(opt);
+        });
+        catSelect.value = categories[1] ? categories[1].id : 'other';
+        document.getElementById('prodStatus').value = 'available';
+        document.getElementById('prodFeatures').value = '';
+        document.getElementById('pricesContainer').innerHTML = '';
+        addPriceRow();
+        removeImage('productImageFile', 'productImagePreview', 'productImageUpload', 'productImageRemove');
+    }
+
+    document.getElementById('productModal').classList.add('active');
+}
+
+function closeProductModal() {
+    document.getElementById('productModal').classList.remove('active');
+    editingProductId = null;
+}
+
+function addPriceRow(duration, price, originalPrice) {
+    var container = document.getElementById('pricesContainer');
+    var row = document.createElement('div');
+    row.className = 'price-row';
+    row.innerHTML = '<input type="text" class="price-duration" placeholder="المدة" value="' + (duration || '') + '">' +
+        '<input type="number" class="price-value" placeholder="السعر" value="' + (price || '') + '">' +
+        '<input type="number" class="price-original" placeholder="السعر قبل" value="' + (originalPrice || '') + '">' +
+        '<button class="btn btn-danger btn-sm" onclick="removePriceRow(this)">🗑️</button>';
+    container.appendChild(row);
+}
+
+function removePriceRow(btn) {
+    var row = btn.parentElement;
+    var container = document.getElementById('pricesContainer');
+    if (container.children.length > 1) {
+        row.remove();
+    } else {
+        row.querySelectorAll('input').forEach(function(inp) { inp.value = ''; });
+    }
+}
+
+async function saveProduct() {
+    var name = document.getElementById('prodName').value.trim();
+    var desc = document.getElementById('prodDesc').value.trim();
+    var imageUrl = document.getElementById('prodImageUrl').value.trim();
+    var category = document.getElementById('prodCategory').value;
+    var status = document.getElementById('prodStatus').value;
+    var featuresStr = document.getElementById('prodFeatures').value.trim();
+
+    if (!name) { showToast('❌ أدخل اسم المنتج!', 'error'); return; }
+
+    var image = imageUrl;
+    var preview = document.getElementById('productImagePreview');
+    if (preview.src && preview.classList.contains('show') && preview.src.startsWith('data:')) {
+        image = preview.src;
+    }
+
+    var prices = [];
+    document.querySelectorAll('.price-row').forEach(function(row) {
+        var duration = row.querySelector('.price-duration').value.trim();
+        var price = parseFloat(row.querySelector('.price-value').value);
+        var original = parseFloat(row.querySelector('.price-original').value) || null;
+        if (duration && !isNaN(price)) {
+            prices.push({ duration: duration, price: price, originalPrice: original });
+        }
+    });
+
+    var features = featuresStr ? featuresStr.split(',').map(function(f) { return f.trim(); }).filter(function(f) { return f; }) : [];
+
+    var productData = {
+        name: name,
+        description: desc,
+        image: image,
+        category: category,
+        status: status,
+        prices: prices,
+        features: features,
+        created_at: new Date().toISOString()
+    };
+
+    if (editingProductId) {
+        var idx = products.findIndex(function(p) { return p.id === editingProductId; });
+        if (idx !== -1) {
+            productData.id = editingProductId;
+            productData.created_at = products[idx].created_at;
+            products[idx] = productData;
+        }
+    } else {
+        productData.id = Date.now();
+        products.unshift(productData);
+    }
+
+    localStorage.setItem('stackstore_products', JSON.stringify(products));
+    closeProductModal();
+    renderProducts();
+    renderAdminProducts();
+    updateStats();
+    showToast('✅ تم حفظ المنتج بنجاح!', 'success');
+}
+
+function deleteProduct(id) {
+    if (!confirm('متأكد إنك عاوز تمسح المنتج دا؟')) return;
+    products = products.filter(function(p) { return p.id !== id; });
+    localStorage.setItem('stackstore_products', JSON.stringify(products));
+    renderProducts();
+    renderAdminProducts();
+    updateStats();
+    showToast('🗑️ تم مسح المنتج!', 'success');
+}
+
+function renderAdminProducts() {
+    var container = document.getElementById('adminProductsList');
+    if (products.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-muted);text-align:center;">مفيش منتجات لسه</p>';
+        return;
+    }
+
+    var html = '<table class="admin-table"><thead><tr><th>صورة</th><th>الاسم</th><th>التصنيف</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody>';
+    products.forEach(function(p) {
+        var statusText = p.status === 'available' ? '✅' : p.status === 'out_of_stock' ? '❌' : '🔜';
+        html += '<tr>' +
+            '<td><img class="product-thumb" src="' + (p.image || PLACEHOLDER_IMG) + '" alt="" ></td>' +
+            '<td>' + escapeHtml(p.name) + '</td>' +
+            '<td>' + getCategoryName(p.category) + '</td>' +
+            '<td>' + statusText + '</td>' +
+            '<td class="action-btns">' +
+            '<button class="btn-edit" onclick="openProductModal(' + p.id + ')">✏️ تعديل</button>' +
+            '<button class="btn-delete" onclick="deleteProduct(' + p.id + ')">🗑️ مسح</button>' +
+            '</td></tr>';
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+function getCategoryName(cat) {
+    var found = categories.find(function(c) { return c.id === cat; });
+    return found ? found.name : cat;
+}
+
+async function addDelivery() {
+    var paymentFile = document.getElementById('paymentFile').files[0];
+    var deliveryFile = document.getElementById('deliveryFile').files[0];
+    var notes = document.getElementById('deliveryNotes').value.trim();
+    var dateInput = document.getElementById('deliveryDate').value;
+
+    if (!paymentFile) { showToast('❌ ضيف صورة الدفع!', 'error'); return; }
+    if (!deliveryFile) { showToast('❌ ضيف صورة التسليم!', 'error'); return; }
+
+    var overlay = document.getElementById('compressionOverlay');
+    var progressBar = document.getElementById('compressionProgress');
+    var progressText = document.getElementById('compressionText');
+    overlay.classList.add('active');
+    progressBar.style.width = '10%';
+    progressText.textContent = 'جاري ضغط صورة الدفع...';
+
+    try {
+        var paymentCompressed = await compressImage(paymentFile, 1200, 0.85);
+        progressBar.style.width = '40%';
+        progressText.textContent = 'صورة الدفع: -' + paymentCompressed.reduction + '% | جاري ضغط صورة التسليم...';
+
+        var deliveryCompressed = await compressImage(deliveryFile, 1200, 0.85);
+        progressBar.style.width = '70%';
+        progressText.textContent = 'صورة التسليم: -' + deliveryCompressed.reduction + '% | جاري الرفع...';
+
+        var paymentUrl = null;
+        var deliveryUrl = null;
+
+        if (supabaseClient) {
+            paymentUrl = await uploadToSupabaseStorage(paymentCompressed.file, 'payments');
+            progressBar.style.width = '85%';
+            deliveryUrl = await uploadToSupabaseStorage(deliveryCompressed.file, 'deliveries');
+            progressBar.style.width = '95%';
+
+            var result = await supabaseClient.from('deliveries').insert([{
+                payment_image: paymentUrl,
+                delivery_image: deliveryUrl,
+                notes: notes,
+                delivery_date: dateInput || null,
+                created_at: new Date().toISOString()
+            }]).select();
+
+            if (result.error) throw result.error;
+            deliveries.unshift(result.data[0]);
+        } else {
+            var paymentPreview = document.getElementById('paymentPreview');
+            var deliveryPreview = document.getElementById('deliveryPreview');
+
+            var delivery = {
+                id: Date.now(),
+                payment_image: paymentPreview.src,
+                delivery_image: deliveryPreview.src,
+                notes: notes,
+                delivery_date: dateInput || null,
+                created_at: new Date().toISOString(),
+                date: new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+            };
+            deliveries.unshift(delivery);
+            localStorage.setItem('stackstore_deliveries', JSON.stringify(deliveries));
+        }
+
+        document.getElementById('deliveryNotes').value = '';
+        document.getElementById('deliveryDate').value = '';
+        removeImage('paymentFile', 'paymentPreview', 'paymentUpload', 'paymentRemove');
+        removeImage('deliveryFile', 'deliveryPreview', 'deliveryUpload', 'deliveryRemove');
+
+        progressBar.style.width = '100%';
+        overlay.classList.remove('active');
+
+        renderDeliveries();
+        updateStats();
+        showToast('✅ تم حفظ التسليم بنجاح!', 'success');
+
+    } catch (err) {
+        overlay.classList.remove('active');
+        console.error(err);
+        showToast('❌ حصل خطأ: ' + (err.message || err), 'error');
+    }
+}
+
+async function deleteDelivery(id) {
+    if (!confirm('متأكد إنك عاوز تمسح التسليم دا؟')) return;
+
+    if (supabaseClient) {
+        try {
+            var delivery = deliveries.find(function(d) { return d.id === id; });
+            if (delivery) {
+                if (delivery.payment_image) {
+                    var paymentPath = delivery.payment_image.split('/').pop();
+                    await supabaseClient.storage.from('stackstore').remove(['payments/' + paymentPath]);
+                }
+                if (delivery.delivery_image) {
+                    var deliveryPath = delivery.delivery_image.split('/').pop();
+                    await supabaseClient.storage.from('stackstore').remove(['deliveries/' + deliveryPath]);
+                }
+            }
+            await supabaseClient.from('deliveries').delete().eq('id', id);
+        } catch (err) {
+            console.error(err);
+            showToast('❌ خطأ في المسح', 'error');
+            return;
+        }
+    }
+
+    deliveries = deliveries.filter(function(d) { return d.id !== id; });
+    localStorage.setItem('stackstore_deliveries', JSON.stringify(deliveries));
+    renderDeliveries();
+    updateStats();
+    showToast('🗑️ تم المسح!', 'success');
+}
+
+function renderDeliveries() {
+    var container = document.getElementById('deliveriesList');
+    if (isLoading) return;
+
+    if (deliveries.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">📦</div><h3>لا توجد تسليمات بعد</h3><p>سيتم عرض التسليمات هنا بمجرد إضافتها</p></div>';
+        return;
+    }
+
+    var sorted = deliveries.slice().sort(function(a, b) {
+        var dateA = a.delivery_date ? new Date(a.delivery_date) : new Date(a.created_at);
+        var dateB = b.delivery_date ? new Date(b.delivery_date) : new Date(b.created_at);
+        return dateB - dateA;
+    });
+
+    var html = '<div class="deliveries-grid">';
+    sorted.forEach(function(d, i) {
+        var displayDate;
+        var dateBadge = '';
+        if (d.delivery_date) {
+            displayDate = new Date(d.delivery_date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+            dateBadge = '<span class="date-badge-custom">📌 تاريخ محدد</span>';
+        } else {
+            displayDate = d.date || new Date(d.created_at).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        var notesHtml = d.notes ? '<p style="color:var(--text-muted);font-size:0.9rem;margin-top:10px;">📝 ' + escapeHtml(d.notes) + '</p>' : '';
+        var adminHtml = isAdmin ? '<div class="card-footer"><button class="btn btn-danger btn-sm" onclick="deleteDelivery(' + d.id + ')"><span>🗑️</span> مسح</button></div>' : '';
+
+        html += '<div class="delivery-card"><div class="card-header"><span class="delivery-number">#' + (sorted.length - i) + '</span><span class="date">' + dateBadge + '📅 ' + displayDate + '</span></div><div class="card-body"><div class="images-row"><div class="img-box" onclick="openImageModal(\'' + d.payment_image + '\')"><img src="' + d.payment_image + '" alt="صورة الدفع" loading="lazy"><div class="img-label">💳 الدفع</div></div><div class="img-box" onclick="openImageModal(\'' + d.delivery_image + '\')"><img src="' + d.delivery_image + '" alt="صورة التسليم" loading="lazy"><div class="img-label">📤 التسليم</div></div></div>' + notesHtml + '</div>' + adminHtml + '</div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+async function addPublicReview() {
+    var name = document.getElementById('publicReviewerName').value.trim() || 'عميل';
+    var text = document.getElementById('publicReviewText').value.trim();
+
+    if (!text) { showToast('❌ اكتب رأيك الأول!', 'error'); return; }
+    if (publicSelectedRating === 0) { showToast('❌ اختار التقييم بالنجوم!', 'error'); return; }
+
+    var review = {
+        id: Date.now(),
+        product_id: null,
+        name: name,
+        text: text,
+        rating: publicSelectedRating,
+        created_at: new Date().toISOString(),
+        date: new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
+    };
+
+    if (supabaseClient) {
+        try {
+            await supabaseClient.from('reviews').insert([review]).select();
+        } catch (e) { console.error(e); }
+    }
+
+    reviews.unshift(review);
+    localStorage.setItem('stackstore_reviews', JSON.stringify(reviews));
+
+    document.getElementById('publicReviewerName').value = '';
+    document.getElementById('publicReviewText').value = '';
+    publicSelectedRating = 0;
+    updateStarDisplay('publicStarRating', 0);
+
+    renderReviews();
+    updateStats();
+    showToast('✅ تم إرسال رأيك بنجاح! شكراً لك ⭐', 'success');
+}
+
+async function deleteReview(id) {
+    if (!confirm('متأكد إنك عاوز تمسح الرأي دا؟')) return;
+
+    if (supabaseClient) {
+        try {
+            var review = reviews.find(function(r) { return r.id === id; });
+            if (review && review.image) {
+                var imagePath = review.image.split('/').pop();
+                await supabaseClient.storage.from('stackstore').remove(['reviews/' + imagePath]);
+            }
+            await supabaseClient.from('reviews').delete().eq('id', id);
+        } catch (err) {
+            console.error(err);
+            showToast('❌ خطأ في المسح', 'error');
+            return;
+        }
+    }
+
+    reviews = reviews.filter(function(r) { return r.id !== id; });
+    localStorage.setItem('stackstore_reviews', JSON.stringify(reviews));
+    renderReviews();
+    if (currentProduct) renderProductReviews();
+    updateStats();
+    showToast('🗑️ تم المسح!', 'success');
+}
+
+function renderReviews() {
+    var container = document.getElementById('reviewsList');
+    if (isLoading) return;
+
+    if (reviews.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">⭐</div><h3>لا توجد آراء بعد</h3><p>كن أول من يقيم خدماتنا!</p></div>';
+        return;
+    }
+
+    var sorted = reviews.slice().sort(function(a, b) {
+        return new Date(b.created_at) - new Date(a.created_at);
+    });
+
+    var html = '<div class="reviews-grid">';
+    sorted.forEach(function(r) {
+        var stars = '';
+        for (var i = 1; i <= 5; i++) {
+            stars += i <= (r.rating || 0) ? '⭐' : '☆';
+        }
+        var deleteBtn = isAdmin ? '<button class="delete-btn" onclick="deleteReview(' + r.id + ')">🗑️ مسح</button>' : '';
+        var imageHtml = r.image ? '<div class="review-image" onclick="openImageModal(\'' + r.image + '\')"><img src="' + r.image + '" alt="صورة" loading="lazy"></div>' : '';
+
+        html += '<div class="review-card">' + deleteBtn +
+            '<div class="review-header">' +
+            '<span class="reviewer-name">' + escapeHtml(r.name || 'عميل') + '</span>' +
+            '<span class="review-date">' + formatDate(r.created_at) + '</span>' +
+            '</div>' +
+            '<div class="review-rating">' + stars + '</div>' +
+            '<div class="review-text">' + escapeHtml(r.text) + '</div>' +
+            imageHtml +
+            '</div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+
+function renderAdminCategories() {
+    var container = document.getElementById('adminCategoriesList');
+    if (!container) return;
+    if (categories.length <= 1) {
+        container.innerHTML = '<p style="color:var(--text-muted);text-align:center;">مفيش أقسام إضافية لسه</p>';
+        return;
+    }
+    var html = '<table class="admin-table"><thead><tr><th>الأيقونة</th><th>الاسم</th><th>المعرف</th><th>الإجراءات</th></tr></thead><tbody>';
+    categories.forEach(function(cat) {
+        if (cat.id === 'all') return;
+        html += '<tr>' +
+            '<td style="font-size:1.4rem;text-align:center;">' + (cat.icon || '—') + '</td>' +
+            '<td style="font-weight:700;">' + escapeHtml(cat.name) + '</td>' +
+            '<td><code style="background:var(--bg);padding:4px 10px;border-radius:6px;font-size:0.8rem;color:var(--text-muted);border:1px solid var(--border);">' + cat.id + '</code></td>' +
+            '<td class="action-btns">' +
+            '<button class="btn-edit" onclick="openCategoryModal(\'' + cat.id + '\')">✏️ تعديل</button>' +
+            '<button class="btn-delete" onclick="deleteCategory(\'' + cat.id + '\')">🗑️ مسح</button>' +
+            '</td></tr>';
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+function openCategoryModal(catId) {
+    var isEdit = !!catId;
+    var name = '';
+    var icon = '';
+    if (isEdit) {
+        var cat = categories.find(function(c) { return c.id === catId; });
+        if (!cat) return;
+        name = cat.name;
+        icon = cat.icon || '';
+    }
+    var newName = prompt(isEdit ? '✏️ تعديل اسم القسم:' : '➕ اسم القسم الجديد:', name);
+    if (newName === null) return;
+    newName = newName.trim();
+    if (!newName) { showToast('❌ الاسم مطلوب!', 'error'); return; }
+
+    var newIcon = prompt('🎨 أيقونة القسم (اختياري، مثل 📺 🎵 🎮):', icon);
+    if (newIcon === null) newIcon = '';
+    newIcon = newIcon.trim();
+
+    if (isEdit) {
+        var idx = categories.findIndex(function(c) { return c.id === catId; });
+        if (idx !== -1) {
+            categories[idx].name = newName;
+            categories[idx].icon = newIcon;
+        }
+    } else {
+        var newId = 'cat_' + Date.now();
+        categories.push({ id: newId, name: newName, icon: newIcon });
+    }
+
+    localStorage.setItem('stackstore_categories', JSON.stringify(categories));
+    setupFilters();
+    renderAdminCategories();
+    renderAdminProducts();
+    renderProducts();
+    showToast('✅ تم حفظ القسم بنجاح!', 'success');
+}
+
+function deleteCategory(catId) {
+    if (catId === 'all') { showToast('❌ لا يمكن حذف القسم الافتراضي!', 'error'); return; }
+    var productsInCat = products.filter(function(p) { return p.category === catId; });
+    if (productsInCat.length > 0) {
+        if (!confirm('⚠️ في ' + productsInCat.length + ' منتج في القسم دا. هيتنقلوا لـ "أخرى". متأكد؟')) return;
+        products.forEach(function(p) {
+            if (p.category === catId) p.category = 'other';
+        });
+        localStorage.setItem('stackstore_products', JSON.stringify(products));
+    } else {
+        if (!confirm('🗑️ متأكد إنك عاوز تمسح القسم "' + getCategoryName(catId) + '"؟')) return;
+    }
+    categories = categories.filter(function(c) { return c.id !== catId; });
+    localStorage.setItem('stackstore_categories', JSON.stringify(categories));
+    if (currentFilter === catId) {
+        currentFilter = 'all';
+        document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active'); });
+        var allTab = document.querySelector('.filter-tab[data-filter="all"]');
+        if (allTab) allTab.classList.add('active');
+    }
+    setupFilters();
+    renderProducts();
+    renderAdminCategories();
+    renderAdminProducts();
+    showToast('🗑️ تم مسح القسم!', 'success');
+}
+
+function renderAdminSection() {
+    document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+    document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.getElementById('tabAdmin').classList.add('active');
+    updateStats();
+    renderAdminProducts();
+    renderAdminCategories();
+    renderAdminDeliveries();
+    renderAdminReviews();
+    document.getElementById('admin').classList.add('active');
+}
+
+function updateStats() {
+    document.getElementById('statProducts').textContent = products.length;
+    document.getElementById('statDeliveries').textContent = deliveries.length;
+    document.getElementById('statReviews').textContent = reviews.length;
+    document.getElementById('statOrders').textContent = deliveries.length;
+}
+
+function renderAdminDeliveries() {
+    var container = document.getElementById('adminDeliveriesList');
+    if (deliveries.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-muted);text-align:center;">مفيش تسليمات لسه</p>';
+        return;
+    }
+    var html = '<div class="deliveries-grid">';
+    deliveries.forEach(function(d, i) {
+        var dateStr = d.delivery_date ? new Date(d.delivery_date).toLocaleDateString('ar-EG') : (d.date || new Date(d.created_at).toLocaleDateString('ar-EG'));
+        html += '<div class="delivery-card"><div class="card-header"><span class="delivery-number">#' + (deliveries.length - i) + '</span><span class="date">' + dateStr + '</span></div><div class="card-body"><div class="images-row"><div class="img-box" onclick="openImageModal(\'' + d.payment_image + '\')"><img src="' + d.payment_image + '" alt="صورة الدفع" loading="lazy"><div class="img-label">💳 الدفع</div></div><div class="img-box" onclick="openImageModal(\'' + d.delivery_image + '\')"><img src="' + d.delivery_image + '" alt="صورة التسليم" loading="lazy"><div class="img-label">📤 التسليم</div></div></div></div><div class="card-footer"><button class="btn btn-danger btn-sm" onclick="deleteDelivery(' + d.id + ')"><span>🗑️</span> مسح</button></div></div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function renderAdminReviews() {
+    var container = document.getElementById('adminReviewsList');
+    if (reviews.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-muted);text-align:center;">مفيش آراء لسه</p>';
+        return;
+    }
+    var html = '<div class="reviews-grid">';
+    reviews.forEach(function(r) {
+        var stars = '';
+        for (var i = 1; i <= 5; i++) stars += i <= (r.rating || 0) ? '⭐' : '☆';
+        var rDate = r.date || new Date(r.created_at).toLocaleDateString('ar-EG');
+        html += '<div class="review-image-card admin-review-card">' +
+            '<button class="admin-review-delete-btn" onclick="deleteReview(' + r.id + ')" title="مسح الرأي">' +
+            '<span class="del-icon">🗑️</span>' +
+            '<span class="del-text">مسح الرأي</span>' +
+            '</button>' +
+            '<div class="admin-review-content">' +
+            '<div class="admin-review-name">' + escapeHtml(r.name || 'عميل') + '</div>' +
+            '<div class="admin-review-stars">' + stars + '</div>' +
+            '<div class="admin-review-text">' + escapeHtml(r.text) + '</div>' +
+            '<div class="admin-review-date">📅 ' + rDate + '</div>' +
+            '</div></div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function checkAdminStatus() {
+    if (isAdmin) {
+        document.getElementById('adminBadge').classList.add('active');
+        document.getElementById('addDeliveryForm').classList.add('active');
+        var adminTab = document.getElementById('tabAdmin');
+        adminTab.innerHTML = '<span class="icon">⚙️</span><span>لوحة التحكم</span>';
+        adminTab.onclick = function() { showSection('admin'); };
+    }
+}
+
+function openAdminLogin() {
+    if (isAdmin) { showSection('admin'); return; }
+    document.getElementById('adminLoginOverlay').classList.add('active');
+    document.getElementById('adminCodeInput').value = '';
+    document.getElementById('adminCodeInput').focus();
+}
+
+function checkAdminCode() {
+    var input = document.getElementById('adminCodeInput').value.trim();
+    if (input === ADMIN_CODE) {
+        isAdmin = true;
+        localStorage.setItem(ADMIN_KEY, 'true');
+        document.getElementById('adminLoginOverlay').classList.remove('active');
+        checkAdminStatus();
+        showToast('✅ تم تسجيل الدخول كأدمن!', 'success');
+        showSection('admin');
+    } else {
+        showToast('❌ كود الأدمن غلط! جرب تاني.', 'error');
+        document.getElementById('adminCodeInput').value = '';
+        document.getElementById('adminCodeInput').focus();
+    }
+}
+
+function logoutAdmin() {
+    if (!confirm('متأكد إنك عاوز تسجل خروج؟')) return;
+    isAdmin = false;
+    localStorage.removeItem(ADMIN_KEY);
+    document.getElementById('adminBadge').classList.remove('active');
+    document.getElementById('addDeliveryForm').classList.remove('active');
+    var adminTab = document.getElementById('tabAdmin');
+    adminTab.innerHTML = '<span class="icon">🔐</span><span>لوحة الأدمن</span>';
+    adminTab.onclick = function() { openAdminLogin(); };
+    showToast('👋 تم تسجيل الخروج!', 'success');
+    showSection('products');
+}
+
+function showSection(sectionId) {
+    if (sectionId === 'admin' && !isAdmin) { openAdminLogin(); return; }
+    document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+    document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
+    var section = document.getElementById(sectionId);
+    if (section) section.classList.add('active');
+    if (sectionId === 'products') document.getElementById('tabProducts').classList.add('active');
+    else if (sectionId === 'deliveries') document.getElementById('tabDeliveries').classList.add('active');
+    else if (sectionId === 'reviews') document.getElementById('tabReviews').classList.add('active');
+    else if (sectionId === 'admin') {
+        document.getElementById('tabAdmin').classList.add('active');
+        renderAdminSection();
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function handleImageUpload(input, previewId, uploadId, removeId) {
+    var file = input.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var preview = document.getElementById(previewId);
+        var uploadArea = document.getElementById(uploadId);
+        var removeBtn = document.getElementById(removeId);
+        preview.src = e.target.result;
+        preview.classList.add('show');
+        uploadArea.classList.add('has-image');
+        uploadArea.querySelector('.upload-content').style.display = 'none';
+        if (removeBtn) removeBtn.classList.add('show');
+    };
+    reader.readAsDataURL(file);
+}
+
+function removeImage(fileId, previewId, uploadId, removeId) {
+    document.getElementById(fileId).value = '';
+    var preview = document.getElementById(previewId);
+    preview.src = '';
+    preview.classList.remove('show');
+    var uploadArea = document.getElementById(uploadId);
+    uploadArea.classList.remove('has-image');
+    var content = uploadArea.querySelector('.upload-content');
+    if (content) content.style.display = 'block';
+    var removeBtn = document.getElementById(removeId);
+    if (removeBtn) removeBtn.classList.remove('show');
+}
+
+function openImageModal(src) {
+    document.getElementById('modalImage').src = src;
+    document.getElementById('imageModal').classList.add('active');
+}
+
+function closeModal() {
+    document.getElementById('imageModal').classList.remove('active');
+}
+
+async function compressImage(file, maxWidth, quality) {
+    maxWidth = maxWidth || 1200;
+    quality = quality || 0.85;
+    return new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var img = new Image();
+            img.onload = function() {
+                var width = img.width;
+                var height = img.height;
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+                var canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                var ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(img, 0, 0, width, height);
+                canvas.toBlob(function(blob) {
+                    if (!blob) { reject(new Error('فشل ضغط الصورة')); return; }
+                    var compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, '') + '.jpg', {
+                        type: 'image/jpeg', lastModified: Date.now()
+                    });
+                    resolve({
+                        file: compressedFile,
+                        originalSize: file.size,
+                        compressedSize: blob.size,
+                        reduction: Math.round((1 - blob.size / file.size) * 100)
+                    });
+                }, 'image/jpeg', quality);
+            };
+            img.onerror = function() { reject(new Error('فشل تحميل الصورة')); };
+            img.src = e.target.result;
+        };
+        reader.onerror = function() { reject(new Error('فشل قراءة الملف')); };
+        reader.readAsDataURL(file);
+    });
+}
+
+async function uploadToSupabaseStorage(file, folder) {
+    if (!supabaseClient) return null;
+    var fileName = folder + '/' + Date.now() + '_' + Math.random().toString(36).substring(2, 10) + '.jpg';
+    var result = await supabaseClient.storage.from('stackstore').upload(fileName, file, { cacheControl: '3600', upsert: false });
+    if (result.error) throw result.error;
+    var urlResult = supabaseClient.storage.from('stackstore').getPublicUrl(fileName);
+    return urlResult.data.publicUrl;
+}
+
+function setupDatePicker() {
+    var datePickerOverlay = document.getElementById('datePickerOverlay');
+    var datePickerGrid = document.getElementById('datePickerGrid');
+    var datePickerTitle = document.getElementById('datePickerTitle');
+    var deliveryDateInput = document.getElementById('deliveryDate');
+    var currentPickerDate = new Date();
+    var selectedPickerDate = null;
+
+    function renderDatePicker(year, month) {
+        var firstDay = new Date(year, month, 1);
+        var lastDay = new Date(year, month + 1, 0);
+        var startDay = firstDay.getDay();
+        var daysInMonth = lastDay.getDate();
+        var prevMonthLastDay = new Date(year, month, 0).getDate();
+        var monthNames = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+        datePickerTitle.textContent = monthNames[month] + ' ' + year;
+        var html = '';
+        var today = new Date();
+        today.setHours(0,0,0,0);
+        for (var i = startDay - 1; i >= 0; i--) {
+            html += '<button class="date-picker-day other-month" disabled>' + (prevMonthLastDay - i) + '</button>';
+        }
+        for (var d = 1; d <= daysInMonth; d++) {
+            var btnClass = 'date-picker-day';
+            var thisDate = new Date(year, month, d);
+            if (thisDate.getTime() === today.getTime()) btnClass += ' today';
+            if (selectedPickerDate && thisDate.getTime() === selectedPickerDate.getTime()) btnClass += ' selected';
+            html += '<button class="' + btnClass + '" data-day="' + d + '">' + d + '</button>';
+        }
+        var remaining = (7 - ((startDay + daysInMonth) % 7)) % 7;
+        for (var j = 1; j <= remaining; j++) {
+            html += '<button class="date-picker-day other-month" disabled>' + j + '</button>';
+        }
+        datePickerGrid.innerHTML = html;
+        datePickerGrid.querySelectorAll('.date-picker-day:not(.other-month):not(.disabled)').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var day = parseInt(this.getAttribute('data-day'));
+                selectedPickerDate = new Date(year, month, day);
+                var y = selectedPickerDate.getFullYear();
+                var m = String(selectedPickerDate.getMonth() + 1).padStart(2, '0');
+                var d = String(day).padStart(2, '0');
+                deliveryDateInput.value = y + '-' + m + '-' + d;
+                var displayDate = selectedPickerDate.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+                deliveryDateInput.setAttribute('data-display', displayDate);
+                deliveryDateInput.classList.add('has-value');
+                datePickerOverlay.classList.remove('active');
+            });
+        });
+    }
+
+    document.getElementById('btnOpenDatePicker').addEventListener('click', function() {
+        datePickerOverlay.classList.add('active');
+        renderDatePicker(currentPickerDate.getFullYear(), currentPickerDate.getMonth());
+    });
+    document.getElementById('datePrevMonth').addEventListener('click', function() {
+        currentPickerDate.setMonth(currentPickerDate.getMonth() - 1);
+        renderDatePicker(currentPickerDate.getFullYear(), currentPickerDate.getMonth());
+    });
+    document.getElementById('dateNextMonth').addEventListener('click', function() {
+        currentPickerDate.setMonth(currentPickerDate.getMonth() + 1);
+        renderDatePicker(currentPickerDate.getFullYear(), currentPickerDate.getMonth());
+    });
+    document.getElementById('datePickerClear').addEventListener('click', function() {
+        selectedPickerDate = null;
+        deliveryDateInput.value = '';
+        deliveryDateInput.removeAttribute('data-display');
+        deliveryDateInput.classList.remove('has-value');
+        datePickerOverlay.classList.remove('active');
+    });
+    document.getElementById('datePickerToday').addEventListener('click', function() {
+        var today = new Date();
+        selectedPickerDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        var y = selectedPickerDate.getFullYear();
+        var m = String(selectedPickerDate.getMonth() + 1).padStart(2, '0');
+        var d = String(selectedPickerDate.getDate()).padStart(2, '0');
+        deliveryDateInput.value = y + '-' + m + '-' + d;
+        var displayDate = selectedPickerDate.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+        deliveryDateInput.setAttribute('data-display', displayDate);
+        deliveryDateInput.classList.add('has-value');
+        datePickerOverlay.classList.remove('active');
+    });
+    datePickerOverlay.addEventListener('click', function(e) {
+        if (e.target === datePickerOverlay) datePickerOverlay.classList.remove('active');
+    });
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return '';
+    return new Date(dateStr).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function showToast(message, type) {
+    var container = document.getElementById('toastContainer');
+    var toast = document.createElement('div');
+    toast.className = 'toast ' + (type || 'info');
+    toast.innerHTML = '<span>' + message + '</span>';
+    container.appendChild(toast);
+    setTimeout(function() {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 3000);
+}
+
+
+
+/* ====== MOBILE ENHANCEMENTS ====== */
+
+// Close modals on mobile back button (popstate)
+window.addEventListener('popstate', function(e) {
+    var activeModals = [
+        document.getElementById('adminLoginOverlay'),
+        document.getElementById('imageModal'),
+        document.getElementById('productModal'),
+        document.getElementById('datePickerOverlay')
+    ];
+    var anyActive = false;
+    activeModals.forEach(function(m) {
+        if (m && m.classList.contains('active')) {
+            m.classList.remove('active');
+            anyActive = true;
+        }
+    });
+    if (anyActive) {
+        e.preventDefault();
+        history.pushState(null, '', location.href);
+    }
+});
+
+// Push state when opening modals to enable back button close
+function pushModalState() {
+    if (window.history && window.history.pushState) {
+        history.pushState({ modal: true }, '', location.href);
+    }
+}
+
+// Enhance modal open functions for mobile
+var originalOpenAdminLogin = openAdminLogin;
+openAdminLogin = function() {
+    if (!isAdmin) pushModalState();
+    originalOpenAdminLogin();
+};
+
+var originalOpenImageModal = openImageModal;
+openImageModal = function(src) {
+    pushModalState();
+    originalOpenImageModal(src);
+};
+
+var originalOpenProductModal = openProductModal;
+openProductModal = function(productId) {
+    pushModalState();
+    originalOpenProductModal(productId);
+};
+
+// Smooth scroll for anchor links
+document.querySelectorAll('a[href^="#"]').forEach(function(a) {
+    a.addEventListener('click', function(e) {
+        var target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            e.preventDefault();
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+});
+
+// Prevent double-tap zoom on buttons
+document.querySelectorAll('button, .nav-tab, .filter-tab, .product-card').forEach(function(el) {
+    el.addEventListener('touchstart', function() {}, { passive: true });
+});
+
+// Auto-focus search on mobile when tapping search area
+var searchInput = document.getElementById('productSearch');
+if (searchInput) {
+    searchInput.addEventListener('focus', function() {
+        this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+}
+
+// Swipe to close image modal
+var imageModal = document.getElementById('imageModal');
+if (imageModal) {
+    var touchStartY = 0;
+    imageModal.addEventListener('touchstart', function(e) {
+        touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    imageModal.addEventListener('touchend', function(e) {
+        var touchEndY = e.changedTouches[0].clientY;
+        if (Math.abs(touchEndY - touchStartY) > 80) {
+            closeModal();
+        }
+    }, { passive: true });
+}
+
+function toggleFaq(element) {
+    var item = element.parentElement;
+    var isActive = item.classList.contains('active');
+
+    // Close all
+    document.querySelectorAll('.faq-item').forEach(function(faq) {
+        faq.classList.remove('active');
+    });
+
+    // Open clicked if it was closed
+    if (!isActive) {
+        item.classList.add('active');
+    }
+}
