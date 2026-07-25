@@ -9,49 +9,48 @@
     <meta name="format-detection" content="telephone=no">
     <title>Stack Store - اشتراكات بريميوم</title>
     <link rel="icon" type="image/png" href="logo.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <base target="_blank">
 <base target="_blank">
-<base target="_blank">
 </head>
 <body>
     <div class="bg-anim"></div>
-
-    <!-- Header -->
-    <header class="header">
-        <div class="logo-section">
-            <img src="logo.png" alt="Stack Store Logo" onerror="this.style.display='none'">
-            <div>
-                <h1>Stack Store</h1>
-                <span>اشتراكات بريميوم بأفضل الأسعار</span>
+    
+    <!-- Fixed Header + Navigation -->
+    <div class="header-nav-wrapper">
+        <header class="header">
+            <div class="logo-section" style="cursor:pointer;" onclick="goToTop()">
+                <img src="logo.png" alt="Stack Store Logo" onerror="this.style.display='none'">
+                <div>
+                    <h1>Stack Store</h1>
+                    <span class="store-subtitle">Software</span>
+                    <span class="store-tagline">اشتراكات بريميوم بأفضل الأسعار</span>
+                </div>
             </div>
-        </div>
-        <div class="admin-badge" id="adminBadge">
-            <span>👑</span>
-            <span>أنت الأدمن</span>
-        </div>
-    </header>
 
-    <!-- Navigation -->
-    <nav class="nav-tabs">
-        <button class="nav-tab active" id="tabProducts" data-section="products">
-            <span class="icon">🛒</span>
-            <span>المنتجات</span>
-        </button>
-        <button class="nav-tab" id="tabDeliveries" data-section="deliveries">
-            <span class="icon">📦</span>
-            <span>التسليمات</span>
-        </button>
-        <button class="nav-tab" id="tabReviews" data-section="reviews">
-            <span class="icon">⭐</span>
-            <span>الآراء</span>
-        </button>
-        <button class="nav-tab" id="tabAdmin" data-section="admin">
-            <span class="icon">🔐</span>
-            <span>لوحة الأدمن</span>
-        </button>
-    </nav>
+            <nav class="nav-tabs">
+                <button class="nav-tab active" id="tabProducts" data-section="products"><i class="fas fa-cart-shopping"></i> المنتجات</button>
+                <button class="nav-tab" id="tabDeliveries" data-section="deliveries"><i class="fas fa-box"></i> التسليمات</button>
+                <button class="nav-tab" id="tabReviews" data-section="reviews"><i class="fas fa-star"></i> الآراء</button>
+                <button class="nav-tab" id="tabTerms" data-section="terms"><i class="fas fa-file-lines"></i> الشروط والأحكام</button>
+                <button class="nav-tab" id="tabAdmin" data-section="admin"><i class="fas fa-lock"></i> لوحة الأدمن</button>
+            </nav>
+
+            <div class="admin-badge" id="adminBadge">
+                <i class="fas fa-crown"></i>
+                <span>أنت الأدمن</span>
+            </div>
+        </header>
+    </div>
+
+            <div class="admin-badge" id="adminBadge">
+                <i class="fas fa-crown"></i>
+                <span>أنت الأدمن</span>
+            </div>
+        </header>
+    </div>
 
     <!-- ====== SECTION: PRODUCTS ====== -->
     <section id="products" class="section active">
@@ -64,9 +63,9 @@
                 <h2>اشتراكاتك المفضلة بأرخص الأسعار</h2>
                 <p>Netflix, Spotify, YouTube, VPN وأكتر — تفعيل فوري وضمان كامل</p>
                 <div class="trust-badges">
-                    <span class="trust-badge">⚡ تفعيل فوري</span>
-                    <span class="trust-badge">🛡️ ضمان 100%</span>
-                    <span class="trust-badge">💬 دعم 24/7</span>
+                    <span class="trust-badge"><i class="fas fa-bolt"></i> تفعيل فوري</span>
+                    <span class="trust-badge"><i class="fas fa-shield-halved"></i> ضمان 100%</span>
+                    <span class="trust-badge"><i class="fas fa-headset"></i> دعم 24/7</span>
                 </div>
             </div>
         </div>
@@ -74,7 +73,7 @@
         <!-- Filters -->
         <div class="filters-bar">
             <div class="search-box">
-                <span class="search-icon">🔍</span>
+                <span class="search-icon"><i class="fas fa-magnifying-glass"></i></span>
                 <input type="text" id="productSearch" placeholder="ابحث عن منتج...">
             </div>
             <div class="filter-tabs" id="filterTabsContainer">
@@ -84,45 +83,59 @@
 
         <!-- Products Grid -->
         <div id="productsGrid">
-            <div class="products-skeleton">
-                <div class="skeleton-card"><div class="skeleton img"></div><div class="skeleton title"></div><div class="skeleton price"></div></div>
-                <div class="skeleton-card"><div class="skeleton img"></div><div class="skeleton title"></div><div class="skeleton price"></div></div>
-                <div class="skeleton-card"><div class="skeleton img"></div><div class="skeleton title"></div><div class="skeleton price"></div></div>
-                <div class="skeleton-card"><div class="skeleton img"></div><div class="skeleton title"></div><div class="skeleton price"></div></div>
+           <div class="products-skeleton">
+               <div class="skeleton-card" style="aspect-ratio:1/1.15"><div class="skeleton img"></div><div class="skeleton title"></div><div class="skeleton price"></div></div>
+               <div class="skeleton-card" style="aspect-ratio:1/1.15"><div class="skeleton img"></div><div class="skeleton title"></div><div class="skeleton price"></div></div>
+               <div class="skeleton-card" style="aspect-ratio:1/1.15"><div class="skeleton img"></div><div class="skeleton title"></div><div class="skeleton price"></div></div>
+               <div class="skeleton-card" style="aspect-ratio:1/1.15"><div class="skeleton img"></div><div class="skeleton title"></div><div class="skeleton price"></div></div>
+           </div>
+       </div>
+
+        <!-- Testimonials -->
+        <div class="testimonials-section">
+            <div class="testimonials-header">
+                <h3><i class="fas fa-comments"></i> ليه اختارونا؟ اسمعها منهم</h3>
+            </div>
+            <div class="testimonials-carousel" id="testimonialsCarousel">
+                <div class="empty-state" style="padding:30px;width:100%;"><div class="icon"><i class="fas fa-comments"></i></div><h3>جاري التحميل...</h3></div>
+            </div>
+            <div class="carousel-nav">
+                <button class="carousel-btn" onclick="scrollTestimonials(-1)">‹</button>
+                <button class="carousel-btn" onclick="scrollTestimonials(1)">›</button>
             </div>
         </div>
 
         <!-- Why Choose Us -->
         <div class="why-us">
-            <h3 class="section-title">✨ لماذا تختار Stack Store؟</h3>
+            <h3 class="section-title"><i class="fas fa-wand-magic-sparkles"></i> لماذا تختار Stack Store؟</h3>
             <div class="features-grid">
                 <div class="feature-box">
-                    <div class="feature-icon">⚡</div>
+                    <div class="feature-icon"><i class="fas fa-bolt"></i></div>
                     <h4>تفعيل فوري</h4>
                     <p>استلم اشتراكك خلال دقائق من الدفع، بدون انتظار</p>
                 </div>
                 <div class="feature-box">
-                    <div class="feature-icon">🛡️</div>
+                    <div class="feature-icon"><i class="fas fa-shield-halved"></i></div>
                     <h4>ضمان كامل</h4>
                     <p>ضمان استرداد المبلغ إذا حصل أي مشكلة في الاشتراك</p>
                 </div>
                 <div class="feature-box">
-                    <div class="feature-icon">💰</div>
+                    <div class="feature-icon"><i class="fas fa-coins"></i></div>
                     <h4>أرخص الأسعار</h4>
                     <p>أسعار تنافسية مع خصومات مستمرة على المدد الطويلة</p>
                 </div>
                 <div class="feature-box">
-                    <div class="feature-icon">🔒</div>
+                    <div class="feature-icon"><i class="fas fa-lock"></i></div>
                     <h4>حسابات آمنة</h4>
                     <p>اشتراكات أصلية 100% بدون مخاطر أو حظر</p>
                 </div>
                 <div class="feature-box">
-                    <div class="feature-icon">📞</div>
+                    <div class="feature-icon"><i class="fas fa-headset"></i></div>
                     <h4>دعم 24/7</h4>
                     <p>فريق دعم جاهز يساعدك في أي وقت تحتاجه</p>
                 </div>
                 <div class="feature-box">
-                    <div class="feature-icon">🔄</div>
+                    <div class="feature-icon"><i class="fas fa-rotate"></i></div>
                     <h4>تجديد سهل</h4>
                     <p>تجديد الاشتراك بنفس الحساب بسهولة وبدون فقدان البيانات</p>
                 </div>
@@ -131,32 +144,32 @@
 
         <!-- How to Order -->
         <div class="how-to-order">
-            <h3 class="section-title">🛒 خطوات الطلب</h3>
+            <h3 class="section-title"><i class="fas fa-cart-shopping"></i> خطوات الطلب</h3>
             <div class="steps-grid">
                 <div class="step-box">
                     <div class="step-number">1</div>
-                    <div class="step-icon">🔍</div>
+                    <div class="step-icon"><i class="fas fa-magnifying-glass"></i></div>
                     <h4>اختر منتجك</h4>
                     <p>تصفح المنتجات واختار اللي يناسبك</p>
                 </div>
-                <div class="step-arrow">➡️</div>
+                <div class="step-arrow"><i class="fas fa-arrow-left"></i></div>
                 <div class="step-box">
                     <div class="step-number">2</div>
-                    <div class="step-icon">💬</div>
+                    <div class="step-icon"><i class="fas fa-comments"></i></div>
                     <h4>تواصل عبر واتساب</h4>
                     <p>اضغط "اطلب الآن" وابعت لنا تفاصيل طلبك</p>
                 </div>
-                <div class="step-arrow">➡️</div>
+                <div class="step-arrow"><i class="fas fa-arrow-left"></i></div>
                 <div class="step-box">
                     <div class="step-number">3</div>
-                    <div class="step-icon">💳</div>
+                    <div class="step-icon"><i class="fas fa-credit-card"></i></div>
                     <h4>ادفع بسهولة</h4>
                     <p>ادفع بأي طريقة تناسبك (فودافون كاش، إنستا باي، الخ)</p>
                 </div>
-                <div class="step-arrow">➡️</div>
+                <div class="step-arrow"><i class="fas fa-arrow-left"></i></div>
                 <div class="step-box">
                     <div class="step-number">4</div>
-                    <div class="step-icon">🎉</div>
+                    <div class="step-icon"><i class="fas fa-gift"></i></div>
                     <h4>استلم فوراً</h4>
                     <p>استلم الاشتراك مفعل وجاهز للاستخدام</p>
                 </div>
@@ -165,12 +178,12 @@
 
         <!-- FAQ -->
         <div class="faq-section">
-            <h3 class="section-title">❓ الأسئلة الشائعة</h3>
+            <h3 class="section-title"><i class="fas fa-circle-question"></i> الأسئلة الشائعة</h3>
             <div class="faq-list">
                 <div class="faq-item">
                     <div class="faq-question" onclick="toggleFaq(this)">
                         <span>الاشتراكات أصلية ولا مشروكة؟</span>
-                        <span class="faq-toggle">➕</span>
+                        <span class="faq-toggle"><i class="fas fa-plus"></i></span>
                     </div>
                     <div class="faq-answer">
                         <p>كل الاشتراكات أصلية 100%. عندك خيارين: تفعيل على حسابك الشخصي، أو حساب جاهز نعمله لك. كل الاشتراكات مضمونة وآمنة.</p>
@@ -179,7 +192,7 @@
                 <div class="faq-item">
                     <div class="faq-question" onclick="toggleFaq(this)">
                         <span>كم مدة التفعيل؟</span>
-                        <span class="faq-toggle">➕</span>
+                        <span class="faq-toggle"><i class="fas fa-plus"></i></span>
                     </div>
                     <div class="faq-answer">
                         <p>التفعيل فوري في أغلب الأحيان خلال 5-15 دقيقة من تأكيد الدفع. في حالات نادرة ممكن ياخد ساعة كحد أقصى.</p>
@@ -188,7 +201,7 @@
                 <div class="faq-item">
                     <div class="faq-question" onclick="toggleFaq(this)">
                         <span>لو حصل مشكلة في الاشتراك؟</span>
-                        <span class="faq-toggle">➕</span>
+                        <span class="faq-toggle"><i class="fas fa-plus"></i></span>
                     </div>
                     <div class="faq-answer">
                         <p>عندك ضمان كامل طول فترة الاشتراك. لو واجهت أي مشكلة، تواصل معانا فوراً وهنحلها أو نرجعلك فلوسك.</p>
@@ -197,7 +210,7 @@
                 <div class="faq-item">
                     <div class="faq-question" onclick="toggleFaq(this)">
                         <span>طرق الدفع المتاحة؟</span>
-                        <span class="faq-toggle">➕</span>
+                        <span class="faq-toggle"><i class="fas fa-plus"></i></span>
                     </div>
                     <div class="faq-answer">
                         <p>فودافون كاش، إنستا باي، فوري، أورانج كاش، واتساب باي، وتحويل بنكي. كل الطرق متاحة وسهلة.</p>
@@ -206,7 +219,7 @@
                 <div class="faq-item">
                     <div class="faq-question" onclick="toggleFaq(this)">
                         <span>ممكن أجدد نفس الاشتراك؟</span>
-                        <span class="faq-toggle">➕</span>
+                        <span class="faq-toggle"><i class="fas fa-plus"></i></span>
                     </div>
                     <div class="faq-answer">
                         <p>أكيد! تقدر تجدد نفس الاشتراك قبل ما يخلص بيومين عشان ما تفقدش بياناتك أو قوائم التشغيل.</p>
@@ -225,20 +238,20 @@
                 </div>
                 <div class="footer-links">
                     <h4>روابط سريعة</h4>
-                    <a onclick="showSection('products')">🛒 المنتجات</a>
-                    <a onclick="showSection('deliveries')">📦 التسليمات</a>
-                    <a onclick="showSection('reviews')">⭐ الآراء</a>
+                    <a onclick="showSection('products')"><i class="fas fa-cart-shopping"></i> المنتجات</a>
+                    <a onclick="showSection('deliveries')"><i class="fas fa-box"></i> التسليمات</a>
+                    <a onclick="showSection('reviews')"><i class="fas fa-star"></i> الآراء</a>
                 </div>
                 <div class="footer-contact">
                     <h4>تواصل معنا</h4>
-                    <p>📱 واتساب: متاح 24/7</p>
-                    <p>⏰ مواعيد العمل: طول اليوم</p>
-                    <p>🚀 التسليم: فوري</p>
+                    <p><i class="fas fa-mobile-screen"></i> واتساب: متاح 24/7</p>
+                    <p><i class="fas fa-clock"></i> مواعيد العمل: طول اليوم</p>
+                    <p><i class="fas fa-rocket"></i> التسليم: فوري</p>
                 </div>
             </div>
             <div class="footer-bottom">
                 <p>© 2026 Stack Store. جميع الحقوق محفوظة.</p>
-                <p class="footer-slogan">💙 تسوق بذكاء، وفر أكتر</p>
+                <p class="footer-slogan"><i class="fas fa-heart"></i> تسوق بذكاء، وفر أكتر</p>
             </div>
         </footer>
     </section>
@@ -246,7 +259,7 @@
     <!-- ====== SECTION: PRODUCT DETAIL ====== -->
     <section id="productDetail" class="section">
         <button class="back-btn" onclick="showSection('products')">
-            <span>⬅️</span>
+            <span><i class="fas fa-arrow-right"></i></span>
             <span>رجوع للمنتجات</span>
         </button>
         <div id="productDetailContent"></div>
@@ -254,29 +267,29 @@
         <!-- Product Reviews -->
         <div class="card product-reviews-card">
             <div class="card-title">
-                <span class="icon">💬</span>
+                <i class="fas fa-comments"></i>
                 آراء العملاء عن هذا المنتج
             </div>
             <div id="productReviewsList"></div>
             <div class="add-review-public">
-                <h4>✍️ أضف رأيك</h4>
+                <h4><i class="fas fa-pen"></i> أضف رأيك</h4>
                 <div class="form-group">
                     <input type="text" id="reviewerName" placeholder="اسمك (اختياري)">
                 </div>
                 <div class="form-group">
                     <div class="star-rating" id="starRating">
-                        <span data-rating="1">⭐</span>
-                        <span data-rating="2">⭐</span>
-                        <span data-rating="3">⭐</span>
-                        <span data-rating="4">⭐</span>
-                        <span data-rating="5">⭐</span>
+                        <span data-rating="1"><i class="fas fa-star"></i></span>
+                        <span data-rating="2"><i class="fas fa-star"></i></span>
+                        <span data-rating="3"><i class="fas fa-star"></i></span>
+                        <span data-rating="4"><i class="fas fa-star"></i></span>
+                        <span data-rating="5"><i class="fas fa-star"></i></span>
                     </div>
                 </div>
                 <div class="form-group">
                     <textarea id="reviewerText" placeholder="اكتب رأيك في المنتج..."></textarea>
                 </div>
                 <button class="btn btn-primary" onclick="submitProductReview()" style="width:100%;justify-content:center;">
-                    <span>📤</span>
+                    <span><i class="fas fa-paper-plane"></i></span>
                     <span>إرسال الرأي</span>
                 </button>
             </div>
@@ -289,59 +302,59 @@
         <div class="admin-panel" id="addDeliveryForm">
             <div class="card">
                 <div class="card-title">
-                    <span class="icon">📝</span>
+                    <i class="fas fa-pen"></i>
                     تسليم جديد
                 </div>
                 <div class="upload-grid">
                     <div class="form-group">
-                        <label>💳 صورة الدفع</label>
+                        <label><i class="fas fa-credit-card"></i> صورة الدفع</label>
                         <div class="upload-area" id="paymentUpload">
                             <input type="file" id="paymentFile" accept="image/*">
                             <div class="upload-content">
-                                <div class="upload-icon">💳</div>
+                                <div class="upload-icon"><i class="fas fa-credit-card"></i></div>
                                 <div class="upload-text">اضغط لرفع صورة الدفع</div>
                             </div>
                             <img class="upload-preview" id="paymentPreview" alt="معاينة الدفع">
                         </div>
-                        <button class="upload-remove" id="paymentRemove">❌ إزالة الصورة</button>
+                        <button class="upload-remove" id="paymentRemove"><i class="fas fa-xmark"></i> إزالة الصورة</button>
                     </div>
                     <div class="form-group">
-                        <label>📤 صورة التسليم</label>
+                        <label><i class="fas fa-paper-plane"></i> صورة التسليم</label>
                         <div class="upload-area" id="deliveryUpload">
                             <input type="file" id="deliveryFile" accept="image/*">
                             <div class="upload-content">
-                                <div class="upload-icon">📤</div>
+                                <div class="upload-icon"><i class="fas fa-paper-plane"></i></div>
                                 <div class="upload-text">اضغط لرفع صورة التسليم</div>
                             </div>
                             <img class="upload-preview" id="deliveryPreview" alt="معاينة التسليم">
                         </div>
-                        <button class="upload-remove" id="deliveryRemove">❌ إزالة الصورة</button>
+                        <button class="upload-remove" id="deliveryRemove"><i class="fas fa-xmark"></i> إزالة الصورة</button>
                     </div>
                 </div>
                 <div class="form-group date-group" style="margin-top: 15px;">
                     <label>
-                        <span>📅</span>
+                        <span><i class="fas fa-calendar-days"></i></span>
                         <span>تاريخ التسليم</span>
                         <span class="date-optional-badge">اختياري</span>
                     </label>
                     <div class="date-input-wrapper">
                         <input type="text" id="deliveryDate" placeholder="اختر التاريخ..." readonly>
                         <button type="button" class="date-picker-btn" id="btnOpenDatePicker" title="اختر التاريخ">
-                            <span>📆</span>
+                            <span><i class="fas fa-calendar-check"></i></span>
                         </button>
                         <div class="date-today-badge" id="dateTodayBadge">اليوم</div>
                     </div>
                     <p class="date-hint">
-                        <span>💡</span>
+                        <span><i class="fas fa-lightbulb"></i></span>
                         لو سيبتها فاضية هيتم استخدام تاريخ اليوم تلقائياً
                     </p>
                 </div>
                 <div class="form-group">
-                    <label>📝 ملاحظات (اختياري)</label>
+                    <label><i class="fas fa-pen"></i> ملاحظات (اختياري)</label>
                     <textarea id="deliveryNotes" placeholder="أي ملاحظات إضافية..."></textarea>
                 </div>
                 <button class="btn btn-primary" id="btnSaveDelivery" style="width: 100%; justify-content: center;">
-                    <span>✅</span>
+                    <span><i class="fas fa-check"></i></span>
                     <span>حفظ التسليم</span>
                 </button>
             </div>
@@ -350,7 +363,7 @@
         <!-- Deliveries List -->
         <div id="deliveriesList">
             <div class="empty-state">
-                <div class="icon">📦</div>
+                <div class="icon"><i class="fas fa-box"></i></div>
                 <h3>جاري التحميل...</h3>
             </div>
         </div>
@@ -361,29 +374,29 @@
         <!-- Add Review Form (Public - No Image) -->
         <div class="card">
             <div class="card-title">
-                <span class="icon">✍️</span>
+                <i class="fas fa-pen"></i>
                 أضف رأيك
             </div>
             <div class="form-group">
-                <label>👤 اسمك</label>
+                <label><i class="fas fa-user"></i> اسمك</label>
                 <input type="text" id="publicReviewerName" placeholder="اسمك (اختياري)">
             </div>
             <div class="form-group">
-                <label>⭐ التقييم</label>
+                <label><i class="fas fa-star"></i> التقييم</label>
                 <div class="star-rating" id="publicStarRating">
-                    <span data-rating="1">⭐</span>
-                    <span data-rating="2">⭐</span>
-                    <span data-rating="3">⭐</span>
-                    <span data-rating="4">⭐</span>
-                    <span data-rating="5">⭐</span>
+                    <span data-rating="1"><i class="fas fa-star"></i></span>
+                    <span data-rating="2"><i class="fas fa-star"></i></span>
+                    <span data-rating="3"><i class="fas fa-star"></i></span>
+                    <span data-rating="4"><i class="fas fa-star"></i></span>
+                    <span data-rating="5"><i class="fas fa-star"></i></span>
                 </div>
             </div>
             <div class="form-group">
-                <label>💬 رأيك</label>
+                <label><i class="fas fa-comment"></i> رأيك</label>
                 <textarea id="publicReviewText" placeholder="اكتب رأيك في خدماتنا..."></textarea>
             </div>
             <button class="btn btn-success" id="btnSavePublicReview" style="width: 100%; justify-content: center;">
-                <span>📤</span>
+                <span><i class="fas fa-paper-plane"></i></span>
                 <span>إرسال الرأي</span>
             </button>
         </div>
@@ -391,52 +404,122 @@
         <!-- Reviews List -->
         <div id="reviewsList">
             <div class="empty-state">
-                <div class="icon">⭐</div>
+                <div class="icon"><i class="fas fa-star"></i></div>
                 <h3>جاري التحميل...</h3>
             </div>
         </div>
     </section>
 
+    <!-- ====== SECTION: TERMS ====== -->
+    <section id="terms" class="section">
+        <div class="terms-header">
+            <h2>الشروط والأحكام</h2>
+            <p>مرحبًا بك في Stack Store</p>
+        </div>
+        <div class="terms-list">
+            <div class="terms-item">
+                <h3><span class="num">1</span> الاشتراكات الأصلية</h3>
+                <p>جميع الاشتراكات التي نوفرها أصلية 100% ومضمونة بالكامل.
+نلتزم بضمان وصول كامل لجميع الخدمات والمميزات المعلن عنها.
+في حالة وجود أي مشكلة تفعيل، نضمن حلها أو تعويض العميل حسب سياستنا.</p>
+            </div>
+            <div class="terms-item">
+                <h3><span class="num">2</span> الأسعار التنافسية</h3>
+                <p>نقدم أسعارًا مخفضة نتيجة الشراء بالجملة أو أنظمة الحسابات المشتركة.
+الأسعار معروضة بوضوح على الموقع وقد يتم تحديثها في أي وقت دون إشعار مسبق، وذلك دون التأثير على الطلبات المؤكدة مسبقًا.</p>
+            </div>
+            <div class="terms-item">
+                <h3><span class="num">3</span> التسليم السريع</h3>
+                <p>يتم تسليم معظم الحسابات في غضون دقائق قليلة بعد إتمام الطلب.
+قد تستغرق بعض الاشتراكات أو الخدمات المحددة ما يصل إلى 24 ساعة كحد أقصى، حسب نوع الخدمة.
+إذا تأخر التسليم عن المدة المذكورة، يحق للعميل التواصل مع الدعم للمتابعة.</p>
+            </div>
+            <div class="terms-item">
+                <h3><span class="num">4</span> التجديد</h3>
+                <p>سيتم إرسال بريد تذكيري قبل انتهاء الاشتراك.
+لن يتم التجديد إلا إذا طلب العميل ذلك، لضمان عدم وجود أي رسوم غير مرغوبة.
+العملاء مسؤولون عن متابعة بريدهم الإلكتروني وتأكيد التجديد قبل انتهاء الاشتراك.</p>
+            </div>
+            <div class="terms-item">
+                <h3><span class="num">5</span> سياسة الوصول</h3>
+                <p>يمكن استخدام الحسابات المشتركة من أي مكان في العالم مع توفر الإنترنت.
+لا يمكن استخدام بيانات تسجيل الدخول على أكثر من عدد الأجهزة المتفق عليه وقت الشراء.
+التكرار في الانتهاك قد يؤدي إلى رسوم إضافية أو إيقاف الاشتراك دون تعويض.
+مشاركة أو إساءة استخدام بيانات الدخول قد تؤدي إلى تعليق الحساب.</p>
+            </div>
+            <div class="terms-item">
+                <h3><span class="num">6</span> طرق الدفع</h3>
+                <p>نقبل المحافظ الإلكترونية، إنستا باي، فودافون كاش، البطاقات الائتمانية والخصم المباشر، بايبال، والعملات الرقمية. تتم جميع عمليات الدفع بشكل آمن عبر بوابات موثوقة.</p>
+            </div>
+            <div class="terms-item">
+                <h3><span class="num">7</span> الدعم الفني</h3>
+                <p>فريق الدعم متاح عبر واتساب والدردشة المباشرة للإجابة عن الاستفسارات وحل المشكلات. نلتزم بتقديم استجابات سريعة واحترافية لضمان رضا العملاء.</p>
+            </div>
+            <div class="terms-item">
+                <h3><span class="num">8</span> التعديلات</h3>
+                <p>تحتفظ Stack Store بحق تحديث أو تعديل هذه الشروط والأحكام في أي وقت. تسري التغييرات فور نشرها على الموقع. استمرار استخدام الموقع يُعتبر موافقة على الشروط المحدثة.</p>
+            </div>
+        </div>
+    </section>
+    
     <!-- ====== SECTION: ADMIN ====== -->
     <section id="admin" class="section">
         <button class="back-btn" onclick="showSection('products')">
-            <span>⬅️</span>
+            <span><i class="fas fa-arrow-right"></i></span>
             <span>رجوع للرئيسية</span>
         </button>
 
         <!-- Stats -->
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-icon">🛒</div>
+                <div class="stat-icon"><i class="fas fa-cart-shopping"></i></div>
                 <div class="stat-number" id="statProducts">0</div>
                 <div class="stat-label">المنتجات</div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">📦</div>
+                <div class="stat-icon"><i class="fas fa-box"></i></div>
                 <div class="stat-number" id="statDeliveries">0</div>
                 <div class="stat-label">التسليمات</div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">⭐</div>
+                <div class="stat-icon"><i class="fas fa-star"></i></div>
                 <div class="stat-number" id="statReviews">0</div>
                 <div class="stat-label">الآراء</div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">💰</div>
+                <div class="stat-icon"><i class="fas fa-coins"></i></div>
                 <div class="stat-number" id="statOrders">0</div>
                 <div class="stat-label">الطلبات</div>
             </div>
         </div>
 
+                <!-- Testimonials Management -->
+        <div class="card">
+            <div class="card-title" style="justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <i class="fas fa-comments"></i>
+                    صور آراء العملاء
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="openTestimonialModal()">
+                    <span><i class="fas fa-plus"></i></span>
+                    <span>صورة جديدة</span>
+                </button>
+            </div>
+            <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:15px;">
+                <i class="fas fa-lightbulb"></i> الصور دي بتظهر في الشريط الأفقي "لي اختارونا؟" في الصفحة الرئيسية.
+            </p>
+            <div id="adminTestimonialsList"></div>
+        </div>
+        
         <!-- Product Management -->
         <div class="card">
             <div class="card-title" style="justify-content:space-between;">
                 <div style="display:flex;align-items:center;gap:10px;">
-                    <span class="icon">🛒</span>
+                    <i class="fas fa-cart-shopping"></i>
                     إدارة المنتجات
                 </div>
                 <button class="btn btn-primary btn-sm" onclick="openProductModal()">
-                    <span>➕</span>
+                    <span><i class="fas fa-plus"></i></span>
                     <span>منتج جديد</span>
                 </button>
             </div>
@@ -447,16 +530,16 @@
         <div class="card">
             <div class="card-title" style="justify-content:space-between;">
                 <div style="display:flex;align-items:center;gap:10px;">
-                    <span class="icon">🏷️</span>
+                    <i class="fas fa-tag"></i>
                     إدارة الأقسام
                 </div>
                 <button class="btn btn-primary btn-sm" onclick="openCategoryModal()">
-                    <span>➕</span>
+                    <span><i class="fas fa-plus"></i></span>
                     <span>قسم جديد</span>
                 </button>
             </div>
             <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:15px;">
-                💡 الأقسام هتظهر في الفلاتر والمنتجات. القسم "الكل" ثابت ومش هينفع تمسحه.
+                <i class="fas fa-lightbulb"></i> الأقسام هتظهر في الفلاتر والمنتجات. القسم "الكل" ثابت ومش هينفع تمسحه.
             </p>
             <div id="adminCategoriesList"></div>
         </div>
@@ -464,7 +547,7 @@
         <!-- Delivery Management -->
         <div class="card">
             <div class="card-title">
-                <span class="icon">📋</span>
+                <i class="fas fa-clipboard-list"></i>
                 كل التسليمات
             </div>
             <div id="adminDeliveriesList"></div>
@@ -473,7 +556,7 @@
         <!-- Review Management -->
         <div class="card">
             <div class="card-title">
-                <span class="icon">⭐</span>
+                <i class="fas fa-star"></i>
                 كل الآراء
             </div>
             <div id="adminReviewsList"></div>
@@ -482,15 +565,15 @@
         <!-- Admin Settings -->
         <div class="card">
             <div class="card-title">
-                <span class="icon">⚙️</span>
+                <i class="fas fa-gear"></i>
                 إعدادات الأدمن
             </div>
             <button class="btn btn-danger" onclick="logoutAdmin()" style="width:100%;justify-content:center;">
-                <span>🚪</span>
+                <span><i class="fas fa-right-from-bracket"></i></span>
                 <span>تسجيل الخروج من الأدمن</span>
             </button>
             <p style="color:var(--text-muted);font-size:0.85rem;margin-top:15px;text-align:center;">
-                ⚠️ لو سجلت خروج، هتحتاج تدخل الكود تاني من الجهاز دا
+                <i class="fas fa-triangle-exclamation"></i> لو سجلت خروج، هتحتاج تدخل الكود تاني من الجهاز دا
             </p>
         </div>
     </section>
@@ -499,15 +582,15 @@
     <div class="admin-login-overlay" id="adminLoginOverlay">
         <div class="admin-login-box">
             <button class="back-btn" id="btnBackFromLogin" style="margin-bottom: 15px; width: 100%; justify-content: center;">
-                <span>⬅️</span>
+                <span><i class="fas fa-arrow-right"></i></span>
                 <span>رجوع</span>
             </button>
-            <div class="lock-icon">🔐</div>
+            <div class="lock-icon"><i class="fas fa-lock"></i></div>
             <h2>دخول الأدمن</h2>
             <p>أدخل كود الأدمن للوصول للوحة التحكم</p>
             <input type="password" id="adminCodeInput" placeholder="••••••••" maxlength="20">
             <button class="btn btn-primary" id="btnAdminLogin" style="width: 100%; justify-content: center;">
-                <span>🔓</span>
+                <span><i class="fas fa-lock-open"></i></span>
                 <span>دخول</span>
             </button>
             <p style="margin-top: 15px; font-size: 0.8rem; color: var(--text-muted);">
@@ -519,32 +602,32 @@
     <!-- ====== PRODUCT MODAL (Add/Edit) ====== -->
     <div class="modal-overlay" id="productModal">
         <div class="modal-box product-modal-box">
-            <button class="modal-close" onclick="closeProductModal()">✕</button>
+            <button class="modal-close" onclick="closeProductModal()"><i class="fas fa-xmark"></i></button>
             <h2 id="productModalTitle">منتج جديد</h2>
             <div class="form-group">
-                <label>📛 اسم المنتج</label>
+                <label><i class="fas fa-signature"></i> اسم المنتج</label>
                 <input type="text" id="prodName" placeholder="مثال: Netflix Premium">
             </div>
             <div class="form-group">
-                <label>📝 الوصف</label>
+                <label><i class="fas fa-pen"></i> الوصف</label>
                 <textarea id="prodDesc" placeholder="وصف المنتج..."></textarea>
             </div>
             <div class="form-group">
-                <label>🖼️ صورة المنتج</label>
+                <label><i class="fas fa-image"></i> صورة المنتج</label>
                 <div class="upload-area" id="productImageUpload">
                     <input type="file" id="productImageFile" accept="image/*">
                     <div class="upload-content">
-                        <div class="upload-icon">🖼️</div>
+                        <div class="upload-icon"><i class="fas fa-image"></i></div>
                         <div class="upload-text">اضغط لرفع صورة المنتج</div>
                     </div>
                     <img class="upload-preview" id="productImagePreview" alt="معاينة">
                 </div>
                 <p style="color:var(--text-muted);font-size:0.8rem;margin-top:8px;text-align:center;">أو أدخل رابط الصورة:</p>
                 <input type="text" id="prodImageUrl" placeholder="https://..." style="margin-top:8px;">
-                <button class="upload-remove" id="productImageRemove">❌ إزالة الصورة</button>
+                <button class="upload-remove" id="productImageRemove"><i class="fas fa-xmark"></i> إزالة الصورة</button>
             </div>
             <div class="form-group">
-                <label>🏷️ التصنيف</label>
+                <label><i class="fas fa-tag"></i> التصنيف</label>
                 <select id="prodCategory">
                     <option value="streaming">بث (Streaming)</option>
                     <option value="music">موسيقى</option>
@@ -554,34 +637,34 @@
                 </select>
             </div>
             <div class="form-group">
-                <label>💰 الأسعار والمدد</label>
+                <label><i class="fas fa-coins"></i> الأسعار والمدد</label>
                 <div id="pricesContainer">
                     <div class="price-row">
                         <input type="text" class="price-duration" placeholder="المدة" value="شهر">
                         <input type="number" class="price-value" placeholder="السعر" value="">
                         <input type="number" class="price-original" placeholder="السعر قبل" value="">
-                        <button class="btn btn-danger btn-sm" onclick="removePriceRow(this)">🗑️</button>
+                        <button class="btn btn-danger btn-sm" onclick="removePriceRow(this)"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>
                 <button class="btn btn-sm" onclick="addPriceRow()" style="margin-top:10px;background:var(--card);border:1px solid var(--border);">
-                    <span>➕</span>
+                    <span><i class="fas fa-plus"></i></span>
                     <span>إضافة مدة</span>
                 </button>
             </div>
             <div class="form-group">
-                <label>✨ المميزات (افصل بفاصلة)</label>
+                <label><i class="fas fa-wand-magic-sparkles"></i> المميزات (افصل بفاصلة)</label>
                 <input type="text" id="prodFeatures" placeholder="4K, 4 شاشات, بدون إعلانات">
             </div>
             <div class="form-group">
-                <label>📊 الحالة</label>
+                <label><i class="fas fa-chart-simple"></i> الحالة</label>
                 <select id="prodStatus">
-                    <option value="available">✅ متاح</option>
-                    <option value="out_of_stock">❌ نفذت الكمية</option>
-                    <option value="coming_soon">🔜 قريباً</option>
+                    <option value="available"><i class="fas fa-check-circle"></i> متاح</option>
+                    <option value="out_of_stock"><i class="fas fa-circle-xmark"></i> نفذت الكمية</option>
+                    <option value="coming_soon"><i class="fas fa-clock"></i> قريباً</option>
                 </select>
             </div>
             <button class="btn btn-primary" id="btnSaveProduct" style="width:100%;justify-content:center;">
-                <span>💾</span>
+                <span><i class="fas fa-floppy-disk"></i></span>
                 <span>حفظ المنتج</span>
             </button>
         </div>
@@ -589,7 +672,7 @@
 
     <!-- Image Modal -->
     <div class="modal-overlay" id="imageModal">
-        <button class="modal-close" id="btnModalClose">✕</button>
+        <button class="modal-close" id="btnModalClose"><i class="fas fa-xmark"></i></button>
         <img id="modalImage" src="" alt="صورة مكبرة">
     </div>
 
@@ -625,9 +708,37 @@
     </div>
 
     <!-- Floating WhatsApp Button -->
-    <a href="https://wa.me/201000000000" class="floating-whatsapp" id="floatingWhatsapp" target="_blank">
-        <span>💬</span>
+    <a href="https://wa.me/201018484572" class="floating-whatsapp" id="floatingWhatsapp" target="_blank">
+        <span><i class="fab fa-whatsapp"></i></span>
     </a>
+
+        <!-- Testimonial Modal -->
+    <div class="modal-overlay" id="testimonialModal">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeTestimonialModal()"><i class="fas fa-xmark"></i></button>
+            <h2>صورة رأي جديد</h2>
+            <div class="form-group">
+                <label><i class="fas fa-image"></i> صورة الـ Screenshot</label>
+                <div class="upload-area" id="testimonialUpload">
+                    <input type="file" id="testimonialFile" accept="image/*">
+                    <div class="upload-content">
+                        <div class="upload-icon"><i class="fas fa-image"></i></div>
+                        <div class="upload-text">اضغط لرفع صورة الـ Screenshot</div>
+                    </div>
+                    <img class="upload-preview" id="testimonialPreview" alt="معاينة">
+                </div>
+                <button class="upload-remove" id="testimonialRemove"><i class="fas fa-xmark"></i> إزالة الصورة</button>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-user"></i> اسم العميل (اختياري)</label>
+                <input type="text" id="testimonialName" placeholder="اسم العميل">
+            </div>
+            <button class="btn btn-primary" id="btnSaveTestimonial" style="width:100%;justify-content:center;">
+                <span><i class="fas fa-floppy-disk"></i></span>
+                <span>حفظ الصورة</span>
+            </button>
+        </div>
+    </div>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>

@@ -14,12 +14,12 @@ let deliveries = [];
 let reviews = [];
 let categories = [];
 const defaultCategories = [
-    { id: 'all', name: 'الكل', icon: '🏠' },
-    { id: 'streaming', name: 'بث', icon: '📺' },
-    { id: 'music', name: 'موسيقى', icon: '🎵' },
-    { id: 'gaming', name: 'ألعاب', icon: '🎮' },
-    { id: 'vpn', name: 'VPN', icon: '🔒' },
-    { id: 'other', name: 'أخرى', icon: '📦' }
+    { id: 'all', name: 'الكل', icon: '<i class="fas fa-home"></i>' },
+    { id: 'streaming', name: 'بث', icon: '<i class="fas fa-tv"></i>' },
+    { id: 'music', name: 'موسيقى', icon: '<i class="fas fa-music"></i>' },
+    { id: 'gaming', name: 'ألعاب', icon: '<i class="fas fa-gamepad"></i>' },
+    { id: 'vpn', name: 'VPN', icon: '<i class="fas fa-lock"></i>' },
+    { id: 'other', name: 'أخرى', icon: '<i class="fas fa-box"></i>' }
 ];
 let isAdmin = false;
 let isLoading = true;
@@ -28,6 +28,14 @@ let editingProductId = null;
 let selectedRating = 0;
 let publicSelectedRating = 0;
 let currentFilter = 'all';
+let testimonials = [];
+const sampleTestimonials = [
+    { id: 1, image: 'https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=400', name: 'عميل 1' },
+    { id: 2, image: 'https://images.unsplash.com/photo-1611162616475-46b635cb6868?w=400', name: 'عميل 2' },
+    { id: 3, image: 'https://images.unsplash.com/photo-1614680376593-902f74cf0d41?w=400', name: 'عميل 3' },
+    { id: 4, image: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400', name: 'عميل 4' },
+    { id: 5, image: 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=400', name: 'عميل 5' }
+];
 
 const PLACEHOLDER_IMG = 'https://via.placeholder.com/400x250/1e293b/94a3b8?text=No+Image';
 
@@ -199,11 +207,21 @@ async function loadData() {
         reviews = JSON.parse(localStorage.getItem('stackstore_reviews')) || [];
     }
 
+        var storedTestimonials = localStorage.getItem('stackstore_testimonials');
+    if (storedTestimonials) {
+        testimonials = JSON.parse(storedTestimonials);
+    } else {
+        testimonials = sampleTestimonials;
+        localStorage.setItem('stackstore_testimonials', JSON.stringify(testimonials));
+    }
+
+    renderTestimonials();
     isLoading = false;
     renderProducts();
     renderDeliveries();
     renderReviews();
     updateStats();
+    setupFilters();
 }
 
 async function waitForSupabase() {
@@ -238,6 +256,12 @@ function setupEventListeners() {
         });
     });
 
+        setupUpload('testimonialUpload', 'testimonialFile', 'testimonialPreview', 'testimonialUpload', 'testimonialRemove');
+    document.getElementById('btnSaveTestimonial').addEventListener('click', saveTestimonial);
+    document.getElementById('testimonialModal').addEventListener('click', function(e) {
+        if (e.target === this) closeTestimonialModal();
+    });
+
     document.getElementById('productSearch').addEventListener('input', function() { renderProducts(); });
     document.getElementById('btnSaveDelivery').addEventListener('click', addDelivery);
     document.getElementById('btnSavePublicReview').addEventListener('click', addPublicReview);
@@ -269,6 +293,26 @@ function setupEventListeners() {
     });
 
     setupDatePicker();
+        // <i class="fas fa-check-circle"></i> زر الرجوع في المتصفح / الموبايل
+    window.addEventListener('popstate', function(e) {
+        if (e.state && e.state.section) {
+            if (e.state.section === 'products') {
+                // ارجع للمنتجات من غير ما تدفع state جديد
+                document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+                document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
+                document.getElementById('products').classList.add('active');
+                document.getElementById('tabProducts').classList.add('active');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else if (e.state.section === 'productDetail' && e.state.productId) {
+                showProductDetail(e.state.productId);
+            } else {
+                showSection(e.state.section, false);
+            }
+        } else {
+            // لو مفيش state (أول مرة)، رجّع للمنتجات
+            showSection('products', false);
+        }
+    });
 }
 
 function setupUpload(uploadId, fileId, previewId, uploadAreaId, removeId) {
@@ -364,29 +408,33 @@ function renderProducts() {
     });
 
     if (filtered.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="icon">🛒</div><h3>لا توجد منتجات</h3><p>جرب تغير الفلتر أو البحث</p></div>';
+        container.innerHTML = '<div class="empty-state"><div class="icon"><i class="fas fa-cart-shopping"></i></div><h3>لا توجد منتجات</h3><p>جرب تغير الفلتر أو البحث</p></div>';
         return;
     }
 
     var html = '<div class="products-grid">';
     filtered.forEach(function(p) {
-        var minPrice = p.prices && p.prices.length > 0 ? Math.min.apply(null, p.prices.map(function(x) { return x.price; })) : 0;
-        var statusClass = p.status || 'available';
-        var statusText = statusClass === 'available' ? '✅ متاح' : statusClass === 'out_of_stock' ? '❌ نفذت الكمية' : '🔜 قريباً';
-        var statusBadgeClass = 'status-badge ' + statusClass;
+        var bestPrice = p.prices && p.prices.length > 0 ? p.prices.reduce(function(prev, curr) {
+            return prev.price < curr.price ? prev : curr;
+        }) : null;
+        
+        var discount = bestPrice && bestPrice.originalPrice ? Math.round((1 - bestPrice.price / bestPrice.originalPrice) * 100) : 0;
         var imgSrc = p.image || PLACEHOLDER_IMG;
 
-        html += '<div class="product-card" onclick="showProductDetail(' + p.id + ')">' +
-            '<img class="product-image" src="' + imgSrc + '" alt="' + p.name + '" loading="lazy" onerror="this.src=PLACEHOLDER_IMG">' +
-            '<div class="product-body">' +
-            '<div class="product-name">' + escapeHtml(p.name) + '</div>' +
-            '<div class="product-desc">' + escapeHtml(p.description) + '</div>' +
-            '<div class="product-footer">' +
-            '<div class="product-price">يبدأ من ' + minPrice + ' ج.م</div>' +
-            '<span class="' + statusBadgeClass + '">' + statusText + '</span>' +
-            '</div></div>' +
-            '<div class="view-btn">🔍 عرض التفاصيل</div>' +
-            '</div>';
+        html += '<div class="product-card-wrapper">' +
+            '<div class="product-card" onclick="showProductDetail(' + p.id + ')">' +
+                (discount > 0 ? '<div class="card-discount-badge">خصم %' + discount + '</div>' : '') +
+                '<img class="product-card-image" src="' + imgSrc + '" alt="' + p.name + '" loading="lazy" onerror="this.src=PLACEHOLDER_IMG">' +
+            '</div>' +
+            '<div class="product-info-below">' +
+                '<button class="card-action-btn" onclick="event.stopPropagation(); showProductDetail(' + p.id + ')">فعل اشتراكك</button>' +
+                '<div class="card-title-bottom">' + escapeHtml(p.name) + '</div>' +
+                '<div class="card-price-row">' +
+                    (bestPrice && bestPrice.originalPrice ? '<span class="original-price">' + bestPrice.originalPrice + ' ج.م</span>' : '') +
+                    (bestPrice ? '<span class="sale-price">' + bestPrice.price + ' ج.م</span>' : '') +
+                '</div>' +
+            '</div>' +
+        '</div>';
     });
     html += '</div>';
     container.innerHTML = html;
@@ -397,8 +445,11 @@ function showProductDetail(productId) {
     if (!p) return;
     currentProduct = p;
 
+    // <i class="fas fa-check-circle"></i> تغيير الرابط بدون ما يعمل ريفريش
+    history.pushState({ section: 'productDetail', productId: productId }, '', '#product/' + productId);
+
     var statusClass = p.status || 'available';
-    var statusText = statusClass === 'available' ? '✅ متاح' : statusClass === 'out_of_stock' ? '❌ نفذت الكمية' : '🔜 قريباً';
+    var statusText = statusClass === 'available' ? '<i class="fas fa-check-circle"></i> متاح' : statusClass === 'out_of_stock' ? '<i class="fas fa-circle-xmark"></i> نفذت الكمية' : '<i class="fas fa-clock"></i> قريباً';
     var imgSrc = p.image || PLACEHOLDER_IMG;
 
     var pricesHtml = '';
@@ -420,13 +471,13 @@ function showProductDetail(productId) {
     if (p.features && p.features.length > 0) {
         featuresHtml = '<div class="detail-features">';
         p.features.forEach(function(f) {
-            featuresHtml += '<span class="feature-tag">✨ ' + escapeHtml(f) + '</span>';
+            featuresHtml += '<span class="feature-tag"><i class="fas fa-wand-magic-sparkles"></i> ' + escapeHtml(f) + '</span>';
         });
         featuresHtml += '</div>';
     }
 
     var orderDisabled = p.status !== 'available' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '';
-    var orderText = p.status === 'available' ? '🛒 اطلب الآن عبر واتساب' : '⛔ غير متاح حالياً';
+    var orderText = p.status === 'available' ? '<i class="fas fa-cart-shopping"></i> اطلب الآن عبر واتساب' : '<i class="fas fa-ban"></i> غير متاح حالياً';
 
     var html = '<div class="card">' +
         '<div class="product-detail-header">' +
@@ -438,14 +489,17 @@ function showProductDetail(productId) {
         '<p class="detail-desc">' + escapeHtml(p.description) + '</p>' +
         featuresHtml +
         '</div></div>' +
-        '<div class="card-title"><span class="icon">💰</span>الأسعار والمدد</div>' +
+        '<div class="card-title"><span class="icon"><i class="fas fa-coins"></i></span>الأسعار والمدد</div>' +
         pricesHtml +
         '<button class="order-btn" ' + orderDisabled + ' onclick="orderProduct(' + p.id + ')">' + orderText + '</button>' +
         '</div>';
 
     document.getElementById('productDetailContent').innerHTML = html;
     renderProductReviews();
-    showSection('productDetail');
+    
+    document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+    document.getElementById('productDetail').classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function orderProduct(productId) {
@@ -463,7 +517,7 @@ function renderProductReviews() {
     var productReviews = reviews.filter(function(r) { return r.product_id === currentProduct.id; });
 
     if (productReviews.length === 0) {
-        container.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">لا توجد آراء بعد عن هذا المنتج. كن أول من يقيم! ⭐</p>';
+        container.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">لا توجد آراء بعد عن هذا المنتج. كن أول من يقيم! <i class="fas fa-star"></i></p>';
         return;
     }
 
@@ -471,9 +525,9 @@ function renderProductReviews() {
     productReviews.forEach(function(r) {
         var stars = '';
         for (var i = 1; i <= 5; i++) {
-            stars += i <= (r.rating || 0) ? '⭐' : '☆';
+            stars += i <= (r.rating || 0) ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>';
         }
-        var deleteBtn = isAdmin ? '<button class="delete-btn" onclick="deleteReview(' + r.id + ')">🗑️ مسح</button>' : '';
+        var deleteBtn = isAdmin ? '<button class="delete-btn" onclick="deleteReview(' + r.id + ')"><i class="fas fa-trash"></i> مسح</button>' : '';
         html += '<div class="review-card">' + deleteBtn +
             '<div class="review-header">' +
             '<span class="reviewer-name">' + escapeHtml(r.name || 'عميل') + '</span>' +
@@ -490,8 +544,8 @@ function renderProductReviews() {
 function submitProductReview() {
     var name = document.getElementById('reviewerName').value.trim() || 'عميل';
     var text = document.getElementById('reviewerText').value.trim();
-    if (!text) { showToast('❌ اكتب رأيك الأول!', 'error'); return; }
-    if (selectedRating === 0) { showToast('❌ اختار التقييم بالنجوم!', 'error'); return; }
+    if (!text) { showToast('<i class="fas fa-circle-xmark"></i> اكتب رأيك الأول!', 'error'); return; }
+    if (selectedRating === 0) { showToast('<i class="fas fa-circle-xmark"></i> اختار التقييم بالنجوم!', 'error'); return; }
     if (!currentProduct) return;
 
     var review = {
@@ -514,7 +568,7 @@ function submitProductReview() {
     renderProductReviews();
     renderReviews();
     updateStats();
-    showToast('✅ تم إرسال رأيك بنجاح! شكراً لك ⭐', 'success');
+    showToast('<i class="fas fa-check-circle"></i> تم إرسال رأيك بنجاح! شكراً لك <i class="fas fa-star"></i>', 'success');
 }
 
 function openProductModal(productId) {
@@ -594,7 +648,7 @@ function addPriceRow(duration, price, originalPrice) {
     row.innerHTML = '<input type="text" class="price-duration" placeholder="المدة" value="' + (duration || '') + '">' +
         '<input type="number" class="price-value" placeholder="السعر" value="' + (price || '') + '">' +
         '<input type="number" class="price-original" placeholder="السعر قبل" value="' + (originalPrice || '') + '">' +
-        '<button class="btn btn-danger btn-sm" onclick="removePriceRow(this)">🗑️</button>';
+        '<button class="btn btn-danger btn-sm" onclick="removePriceRow(this)"><i class="fas fa-trash"></i></button>';
     container.appendChild(row);
 }
 
@@ -616,7 +670,7 @@ async function saveProduct() {
     var status = document.getElementById('prodStatus').value;
     var featuresStr = document.getElementById('prodFeatures').value.trim();
 
-    if (!name) { showToast('❌ أدخل اسم المنتج!', 'error'); return; }
+    if (!name) { showToast('<i class="fas fa-circle-xmark"></i> أدخل اسم المنتج!', 'error'); return; }
 
     var image = imageUrl;
     var preview = document.getElementById('productImagePreview');
@@ -664,7 +718,7 @@ async function saveProduct() {
     renderProducts();
     renderAdminProducts();
     updateStats();
-    showToast('✅ تم حفظ المنتج بنجاح!', 'success');
+    showToast('<i class="fas fa-check-circle"></i> تم حفظ المنتج بنجاح!', 'success');
 }
 
 function deleteProduct(id) {
@@ -674,7 +728,7 @@ function deleteProduct(id) {
     renderProducts();
     renderAdminProducts();
     updateStats();
-    showToast('🗑️ تم مسح المنتج!', 'success');
+    showToast('<i class="fas fa-trash"></i> تم مسح المنتج!', 'success');
 }
 
 function renderAdminProducts() {
@@ -686,15 +740,15 @@ function renderAdminProducts() {
 
     var html = '<table class="admin-table"><thead><tr><th>صورة</th><th>الاسم</th><th>التصنيف</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody>';
     products.forEach(function(p) {
-        var statusText = p.status === 'available' ? '✅' : p.status === 'out_of_stock' ? '❌' : '🔜';
+        var statusText = p.status === 'available' ? '<i class="fas fa-check-circle"></i>' : p.status === 'out_of_stock' ? '<i class="fas fa-circle-xmark"></i>' : '<i class="fas fa-clock"></i>';
         html += '<tr>' +
             '<td><img class="product-thumb" src="' + (p.image || PLACEHOLDER_IMG) + '" alt="" ></td>' +
             '<td>' + escapeHtml(p.name) + '</td>' +
             '<td>' + getCategoryName(p.category) + '</td>' +
             '<td>' + statusText + '</td>' +
             '<td class="action-btns">' +
-            '<button class="btn-edit" onclick="openProductModal(' + p.id + ')">✏️ تعديل</button>' +
-            '<button class="btn-delete" onclick="deleteProduct(' + p.id + ')">🗑️ مسح</button>' +
+            '<button class="btn-edit" onclick="openProductModal(' + p.id + ')"><i class="fas fa-pen-to-square"></i> تعديل</button>' +
+            '<button class="btn-delete" onclick="deleteProduct(' + p.id + ')"><i class="fas fa-trash"></i> مسح</button>' +
             '</td></tr>';
     });
     html += '</tbody></table>';
@@ -712,8 +766,8 @@ async function addDelivery() {
     var notes = document.getElementById('deliveryNotes').value.trim();
     var dateInput = document.getElementById('deliveryDate').value;
 
-    if (!paymentFile) { showToast('❌ ضيف صورة الدفع!', 'error'); return; }
-    if (!deliveryFile) { showToast('❌ ضيف صورة التسليم!', 'error'); return; }
+    if (!paymentFile) { showToast('<i class="fas fa-circle-xmark"></i> ضيف صورة الدفع!', 'error'); return; }
+    if (!deliveryFile) { showToast('<i class="fas fa-circle-xmark"></i> ضيف صورة التسليم!', 'error'); return; }
 
     var overlay = document.getElementById('compressionOverlay');
     var progressBar = document.getElementById('compressionProgress');
@@ -777,12 +831,12 @@ async function addDelivery() {
 
         renderDeliveries();
         updateStats();
-        showToast('✅ تم حفظ التسليم بنجاح!', 'success');
+        showToast('<i class="fas fa-check-circle"></i> تم حفظ التسليم بنجاح!', 'success');
 
     } catch (err) {
         overlay.classList.remove('active');
         console.error(err);
-        showToast('❌ حصل خطأ: ' + (err.message || err), 'error');
+        showToast('<i class="fas fa-circle-xmark"></i> حصل خطأ: ' + (err.message || err), 'error');
     }
 }
 
@@ -805,7 +859,7 @@ async function deleteDelivery(id) {
             await supabaseClient.from('deliveries').delete().eq('id', id);
         } catch (err) {
             console.error(err);
-            showToast('❌ خطأ في المسح', 'error');
+            showToast('<i class="fas fa-circle-xmark"></i> خطأ في المسح', 'error');
             return;
         }
     }
@@ -814,7 +868,7 @@ async function deleteDelivery(id) {
     localStorage.setItem('stackstore_deliveries', JSON.stringify(deliveries));
     renderDeliveries();
     updateStats();
-    showToast('🗑️ تم المسح!', 'success');
+    showToast('<i class="fas fa-trash"></i> تم المسح!', 'success');
 }
 
 function renderDeliveries() {
@@ -822,7 +876,7 @@ function renderDeliveries() {
     if (isLoading) return;
 
     if (deliveries.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="icon">📦</div><h3>لا توجد تسليمات بعد</h3><p>سيتم عرض التسليمات هنا بمجرد إضافتها</p></div>';
+        container.innerHTML = '<div class="empty-state"><div class="icon"><i class="fas fa-box"></i></div><h3>لا توجد تسليمات بعد</h3><p>سيتم عرض التسليمات هنا بمجرد إضافتها</p></div>';
         return;
     }
 
@@ -838,15 +892,15 @@ function renderDeliveries() {
         var dateBadge = '';
         if (d.delivery_date) {
             displayDate = new Date(d.delivery_date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
-            dateBadge = '<span class="date-badge-custom">📌 تاريخ محدد</span>';
+            dateBadge = '<span class="date-badge-custom"><i class="fas fa-thumbtack"></i> تاريخ محدد</span>';
         } else {
             displayDate = d.date || new Date(d.created_at).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         }
 
-        var notesHtml = d.notes ? '<p style="color:var(--text-muted);font-size:0.9rem;margin-top:10px;">📝 ' + escapeHtml(d.notes) + '</p>' : '';
-        var adminHtml = isAdmin ? '<div class="card-footer"><button class="btn btn-danger btn-sm" onclick="deleteDelivery(' + d.id + ')"><span>🗑️</span> مسح</button></div>' : '';
+        var notesHtml = d.notes ? '<p style="color:var(--text-muted);font-size:0.9rem;margin-top:10px;"><i class="fas fa-pen"></i> ' + escapeHtml(d.notes) + '</p>' : '';
+        var adminHtml = isAdmin ? '<div class="card-footer"><button class="btn btn-danger btn-sm" onclick="deleteDelivery(' + d.id + ')"><span><i class="fas fa-trash"></i></span> مسح</button></div>' : '';
 
-        html += '<div class="delivery-card"><div class="card-header"><span class="delivery-number">#' + (sorted.length - i) + '</span><span class="date">' + dateBadge + '📅 ' + displayDate + '</span></div><div class="card-body"><div class="images-row"><div class="img-box" onclick="openImageModal(\'' + d.payment_image + '\')"><img src="' + d.payment_image + '" alt="صورة الدفع" loading="lazy"><div class="img-label">💳 الدفع</div></div><div class="img-box" onclick="openImageModal(\'' + d.delivery_image + '\')"><img src="' + d.delivery_image + '" alt="صورة التسليم" loading="lazy"><div class="img-label">📤 التسليم</div></div></div>' + notesHtml + '</div>' + adminHtml + '</div>';
+        html += '<div class="delivery-card"><div class="card-header"><span class="delivery-number">#' + (sorted.length - i) + '</span><span class="date">' + dateBadge + '<i class="fas fa-calendar-days"></i> ' + displayDate + '</span></div><div class="card-body"><div class="images-row"><div class="img-box" onclick="openImageModal(\'' + d.payment_image + '\')"><img src="' + d.payment_image + '" alt="صورة الدفع" loading="lazy"><div class="img-label"><i class="fas fa-credit-card"></i> الدفع</div></div><div class="img-box" onclick="openImageModal(\'' + d.delivery_image + '\')"><img src="' + d.delivery_image + '" alt="صورة التسليم" loading="lazy"><div class="img-label"><i class="fas fa-paper-plane"></i> التسليم</div></div></div>' + notesHtml + '</div>' + adminHtml + '</div>';
     });
     html += '</div>';
     container.innerHTML = html;
@@ -856,8 +910,8 @@ async function addPublicReview() {
     var name = document.getElementById('publicReviewerName').value.trim() || 'عميل';
     var text = document.getElementById('publicReviewText').value.trim();
 
-    if (!text) { showToast('❌ اكتب رأيك الأول!', 'error'); return; }
-    if (publicSelectedRating === 0) { showToast('❌ اختار التقييم بالنجوم!', 'error'); return; }
+    if (!text) { showToast('<i class="fas fa-circle-xmark"></i> اكتب رأيك الأول!', 'error'); return; }
+    if (publicSelectedRating === 0) { showToast('<i class="fas fa-circle-xmark"></i> اختار التقييم بالنجوم!', 'error'); return; }
 
     var review = {
         id: Date.now(),
@@ -885,7 +939,7 @@ async function addPublicReview() {
 
     renderReviews();
     updateStats();
-    showToast('✅ تم إرسال رأيك بنجاح! شكراً لك ⭐', 'success');
+    showToast('<i class="fas fa-check-circle"></i> تم إرسال رأيك بنجاح! شكراً لك <i class="fas fa-star"></i>', 'success');
 }
 
 async function deleteReview(id) {
@@ -901,7 +955,7 @@ async function deleteReview(id) {
             await supabaseClient.from('reviews').delete().eq('id', id);
         } catch (err) {
             console.error(err);
-            showToast('❌ خطأ في المسح', 'error');
+            showToast('<i class="fas fa-circle-xmark"></i> خطأ في المسح', 'error');
             return;
         }
     }
@@ -911,7 +965,7 @@ async function deleteReview(id) {
     renderReviews();
     if (currentProduct) renderProductReviews();
     updateStats();
-    showToast('🗑️ تم المسح!', 'success');
+    showToast('<i class="fas fa-trash"></i> تم المسح!', 'success');
 }
 
 function renderReviews() {
@@ -919,7 +973,7 @@ function renderReviews() {
     if (isLoading) return;
 
     if (reviews.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="icon">⭐</div><h3>لا توجد آراء بعد</h3><p>كن أول من يقيم خدماتنا!</p></div>';
+        container.innerHTML = '<div class="empty-state"><div class="icon"><i class="fas fa-star"></i></div><h3>لا توجد آراء بعد</h3><p>كن أول من يقيم خدماتنا!</p></div>';
         return;
     }
 
@@ -931,10 +985,9 @@ function renderReviews() {
     sorted.forEach(function(r) {
         var stars = '';
         for (var i = 1; i <= 5; i++) {
-            stars += i <= (r.rating || 0) ? '⭐' : '☆';
+            stars += i <= (r.rating || 0) ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>';
         }
-        var deleteBtn = isAdmin ? '<button class="delete-btn" onclick="deleteReview(' + r.id + ')">🗑️ مسح</button>' : '';
-        var imageHtml = r.image ? '<div class="review-image" onclick="openImageModal(\'' + r.image + '\')"><img src="' + r.image + '" alt="صورة" loading="lazy"></div>' : '';
+        var deleteBtn = isAdmin ? '<button class="delete-btn" onclick="deleteReview(' + r.id + ')"><i class="fas fa-trash"></i> مسح</button>' : '';
 
         html += '<div class="review-card">' + deleteBtn +
             '<div class="review-header">' +
@@ -943,7 +996,6 @@ function renderReviews() {
             '</div>' +
             '<div class="review-rating">' + stars + '</div>' +
             '<div class="review-text">' + escapeHtml(r.text) + '</div>' +
-            imageHtml +
             '</div>';
     });
     html += '</div>';
@@ -966,8 +1018,8 @@ function renderAdminCategories() {
             '<td style="font-weight:700;">' + escapeHtml(cat.name) + '</td>' +
             '<td><code style="background:var(--bg);padding:4px 10px;border-radius:6px;font-size:0.8rem;color:var(--text-muted);border:1px solid var(--border);">' + cat.id + '</code></td>' +
             '<td class="action-btns">' +
-            '<button class="btn-edit" onclick="openCategoryModal(\'' + cat.id + '\')">✏️ تعديل</button>' +
-            '<button class="btn-delete" onclick="deleteCategory(\'' + cat.id + '\')">🗑️ مسح</button>' +
+            '<button class="btn-edit" onclick="openCategoryModal(\'' + cat.id + '\')"><i class="fas fa-pen-to-square"></i> تعديل</button>' +
+            '<button class="btn-delete" onclick="deleteCategory(\'' + cat.id + '\')"><i class="fas fa-trash"></i> مسح</button>' +
             '</td></tr>';
     });
     html += '</tbody></table>';
@@ -984,12 +1036,12 @@ function openCategoryModal(catId) {
         name = cat.name;
         icon = cat.icon || '';
     }
-    var newName = prompt(isEdit ? '✏️ تعديل اسم القسم:' : '➕ اسم القسم الجديد:', name);
+    var newName = prompt(isEdit ? '<i class="fas fa-pen-to-square"></i> تعديل اسم القسم:' : '<i class="fas fa-plus"></i> اسم القسم الجديد:', name);
     if (newName === null) return;
     newName = newName.trim();
-    if (!newName) { showToast('❌ الاسم مطلوب!', 'error'); return; }
+    if (!newName) { showToast('<i class="fas fa-circle-xmark"></i> الاسم مطلوب!', 'error'); return; }
 
-    var newIcon = prompt('🎨 أيقونة القسم (اختياري، مثل 📺 🎵 🎮):', icon);
+    var newIcon = prompt('<i class="fas fa-palette"></i> أيقونة القسم (اختياري، مثل <i class="fas fa-tv"></i> <i class="fas fa-music"></i> <i class="fas fa-gamepad"></i>):', icon);
     if (newIcon === null) newIcon = '';
     newIcon = newIcon.trim();
 
@@ -1009,20 +1061,20 @@ function openCategoryModal(catId) {
     renderAdminCategories();
     renderAdminProducts();
     renderProducts();
-    showToast('✅ تم حفظ القسم بنجاح!', 'success');
+    showToast('<i class="fas fa-check-circle"></i> تم حفظ القسم بنجاح!', 'success');
 }
 
 function deleteCategory(catId) {
-    if (catId === 'all') { showToast('❌ لا يمكن حذف القسم الافتراضي!', 'error'); return; }
+    if (catId === 'all') { showToast('<i class="fas fa-circle-xmark"></i> لا يمكن حذف القسم الافتراضي!', 'error'); return; }
     var productsInCat = products.filter(function(p) { return p.category === catId; });
     if (productsInCat.length > 0) {
-        if (!confirm('⚠️ في ' + productsInCat.length + ' منتج في القسم دا. هيتنقلوا لـ "أخرى". متأكد؟')) return;
+        if (!confirm('<i class="fas fa-triangle-exclamation"></i> في ' + productsInCat.length + ' منتج في القسم دا. هيتنقلوا لـ "أخرى". متأكد؟')) return;
         products.forEach(function(p) {
             if (p.category === catId) p.category = 'other';
         });
         localStorage.setItem('stackstore_products', JSON.stringify(products));
     } else {
-        if (!confirm('🗑️ متأكد إنك عاوز تمسح القسم "' + getCategoryName(catId) + '"؟')) return;
+        if (!confirm('<i class="fas fa-trash"></i> متأكد إنك عاوز تمسح القسم "' + getCategoryName(catId) + '"؟')) return;
     }
     categories = categories.filter(function(c) { return c.id !== catId; });
     localStorage.setItem('stackstore_categories', JSON.stringify(categories));
@@ -1036,7 +1088,7 @@ function deleteCategory(catId) {
     renderProducts();
     renderAdminCategories();
     renderAdminProducts();
-    showToast('🗑️ تم مسح القسم!', 'success');
+    showToast('<i class="fas fa-trash"></i> تم مسح القسم!', 'success');
 }
 
 function renderAdminSection() {
@@ -1048,6 +1100,7 @@ function renderAdminSection() {
     renderAdminCategories();
     renderAdminDeliveries();
     renderAdminReviews();
+    renderAdminTestimonials();
     document.getElementById('admin').classList.add('active');
 }
 
@@ -1067,7 +1120,7 @@ function renderAdminDeliveries() {
     var html = '<div class="deliveries-grid">';
     deliveries.forEach(function(d, i) {
         var dateStr = d.delivery_date ? new Date(d.delivery_date).toLocaleDateString('ar-EG') : (d.date || new Date(d.created_at).toLocaleDateString('ar-EG'));
-        html += '<div class="delivery-card"><div class="card-header"><span class="delivery-number">#' + (deliveries.length - i) + '</span><span class="date">' + dateStr + '</span></div><div class="card-body"><div class="images-row"><div class="img-box" onclick="openImageModal(\'' + d.payment_image + '\')"><img src="' + d.payment_image + '" alt="صورة الدفع" loading="lazy"><div class="img-label">💳 الدفع</div></div><div class="img-box" onclick="openImageModal(\'' + d.delivery_image + '\')"><img src="' + d.delivery_image + '" alt="صورة التسليم" loading="lazy"><div class="img-label">📤 التسليم</div></div></div></div><div class="card-footer"><button class="btn btn-danger btn-sm" onclick="deleteDelivery(' + d.id + ')"><span>🗑️</span> مسح</button></div></div>';
+        html += '<div class="delivery-card"><div class="card-header"><span class="delivery-number">#' + (deliveries.length - i) + '</span><span class="date">' + dateStr + '</span></div><div class="card-body"><div class="images-row"><div class="img-box" onclick="openImageModal(\'' + d.payment_image + '\')"><img src="' + d.payment_image + '" alt="صورة الدفع" loading="lazy"><div class="img-label"><i class="fas fa-credit-card"></i> الدفع</div></div><div class="img-box" onclick="openImageModal(\'' + d.delivery_image + '\')"><img src="' + d.delivery_image + '" alt="صورة التسليم" loading="lazy"><div class="img-label"><i class="fas fa-paper-plane"></i> التسليم</div></div></div></div><div class="card-footer"><button class="btn btn-danger btn-sm" onclick="deleteDelivery(' + d.id + ')"><span><i class="fas fa-trash"></i></span> مسح</button></div></div>';
     });
     html += '</div>';
     container.innerHTML = html;
@@ -1082,18 +1135,18 @@ function renderAdminReviews() {
     var html = '<div class="reviews-grid">';
     reviews.forEach(function(r) {
         var stars = '';
-        for (var i = 1; i <= 5; i++) stars += i <= (r.rating || 0) ? '⭐' : '☆';
+        for (var i = 1; i <= 5; i++) stars += i <= (r.rating || 0) ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>';
         var rDate = r.date || new Date(r.created_at).toLocaleDateString('ar-EG');
         html += '<div class="review-image-card admin-review-card">' +
             '<button class="admin-review-delete-btn" onclick="deleteReview(' + r.id + ')" title="مسح الرأي">' +
-            '<span class="del-icon">🗑️</span>' +
+            '<span class="del-icon"><i class="fas fa-trash"></i></span>' +
             '<span class="del-text">مسح الرأي</span>' +
             '</button>' +
             '<div class="admin-review-content">' +
             '<div class="admin-review-name">' + escapeHtml(r.name || 'عميل') + '</div>' +
             '<div class="admin-review-stars">' + stars + '</div>' +
             '<div class="admin-review-text">' + escapeHtml(r.text) + '</div>' +
-            '<div class="admin-review-date">📅 ' + rDate + '</div>' +
+            '<div class="admin-review-date"><i class="fas fa-calendar-days"></i> ' + rDate + '</div>' +
             '</div></div>';
     });
     html += '</div>';
@@ -1105,7 +1158,7 @@ function checkAdminStatus() {
         document.getElementById('adminBadge').classList.add('active');
         document.getElementById('addDeliveryForm').classList.add('active');
         var adminTab = document.getElementById('tabAdmin');
-        adminTab.innerHTML = '<span class="icon">⚙️</span><span>لوحة التحكم</span>';
+        adminTab.innerHTML = '<i class="fas fa-gear"></i><span>لوحة التحكم</span>';
         adminTab.onclick = function() { showSection('admin'); };
     }
 }
@@ -1124,10 +1177,10 @@ function checkAdminCode() {
         localStorage.setItem(ADMIN_KEY, 'true');
         document.getElementById('adminLoginOverlay').classList.remove('active');
         checkAdminStatus();
-        showToast('✅ تم تسجيل الدخول كأدمن!', 'success');
+        showToast('<i class="fas fa-check-circle"></i> تم تسجيل الدخول كأدمن!', 'success');
         showSection('admin');
     } else {
-        showToast('❌ كود الأدمن غلط! جرب تاني.', 'error');
+        showToast('<i class="fas fa-circle-xmark"></i> كود الأدمن غلط! جرب تاني.', 'error');
         document.getElementById('adminCodeInput').value = '';
         document.getElementById('adminCodeInput').focus();
     }
@@ -1140,25 +1193,36 @@ function logoutAdmin() {
     document.getElementById('adminBadge').classList.remove('active');
     document.getElementById('addDeliveryForm').classList.remove('active');
     var adminTab = document.getElementById('tabAdmin');
-    adminTab.innerHTML = '<span class="icon">🔐</span><span>لوحة الأدمن</span>';
+    adminTab.innerHTML = '<i class="fas fa-lock"></i><span>لوحة الأدمن</span>';
     adminTab.onclick = function() { openAdminLogin(); };
-    showToast('👋 تم تسجيل الخروج!', 'success');
+    showToast('<i class="fas fa-hand-wave"></i> تم تسجيل الخروج!', 'success');
     showSection('products');
 }
 
-function showSection(sectionId) {
+function showSection(sectionId, pushState) {
+    pushState = pushState !== false; // default true
+
     if (sectionId === 'admin' && !isAdmin) { openAdminLogin(); return; }
+    
     document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
     document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
+    
     var section = document.getElementById(sectionId);
     if (section) section.classList.add('active');
+    
     if (sectionId === 'products') document.getElementById('tabProducts').classList.add('active');
     else if (sectionId === 'deliveries') document.getElementById('tabDeliveries').classList.add('active');
     else if (sectionId === 'reviews') document.getElementById('tabReviews').classList.add('active');
-    else if (sectionId === 'admin') {
-        document.getElementById('tabAdmin').classList.add('active');
+    else if (sectionId === 'terms') document.getElementById('tabTerms').classList.add('active');
+    else if (sectionId === 'admin') {        document.getElementById('tabAdmin').classList.add('active');
         renderAdminSection();
     }
+    
+    // <i class="fas fa-check-circle"></i> غيّر الرابط لما يروح لقسم تاني (إلا لو جاي من زر الرجوع)
+    if (pushState && sectionId !== 'productDetail') {
+        history.pushState({ section: sectionId }, '', '#' + sectionId);
+    }
+    
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -1361,7 +1425,92 @@ function showToast(message, type) {
     }, 3000);
 }
 
+/* ====== TESTIMONIALS ====== */
+function renderTestimonials() {
+    var container = document.getElementById('testimonialsCarousel');
+    if (!container) return;
+    if (testimonials.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-muted);text-align:center;width:100%;padding:30px;">لا توجد صور آراء بعد</p>';
+        return;
+    }
+    var html = '';
+    testimonials.forEach(function(t) {
+        html += '<div class="testimonial-card" onclick="openImageModal(\'' + t.image + '\')">' +
+            '<img src="' + t.image + '" alt="' + escapeHtml(t.name) + '" loading="lazy" onerror="this.style.display=\'none\'">' +
+            '</div>';
+    });
+    container.innerHTML = html;
+}
 
+function scrollTestimonials(direction) {
+    var container = document.getElementById('testimonialsCarousel');
+    if (!container) return;
+    container.scrollBy({ left: direction * 300, behavior: 'smooth' });
+}
+
+function openTestimonialModal() {
+    document.getElementById('testimonialModal').classList.add('active');
+}
+
+function closeTestimonialModal() {
+    document.getElementById('testimonialModal').classList.remove('active');
+    removeImage('testimonialFile', 'testimonialPreview', 'testimonialUpload', 'testimonialRemove');
+    document.getElementById('testimonialName').value = '';
+}
+
+async function saveTestimonial() {
+    var file = document.getElementById('testimonialFile').files[0];
+    var name = document.getElementById('testimonialName').value.trim() || 'عميل';
+    var preview = document.getElementById('testimonialPreview');
+    var image = preview.src && preview.classList.contains('show') ? preview.src : null;
+    
+    if (!image) { showToast('<i class="fas fa-circle-xmark"></i> ارفع صورة الـ Screenshot الأول!', 'error'); return; }
+
+    var testimonial = {
+        id: Date.now(),
+        image: image,
+        name: name
+    };
+
+    testimonials.unshift(testimonial);
+    localStorage.setItem('stackstore_testimonials', JSON.stringify(testimonials));
+    closeTestimonialModal();
+    renderTestimonials();
+    renderAdminTestimonials();
+    showToast('<i class="fas fa-check-circle"></i> تم حفظ صورة الرأي!', 'success');
+}
+
+function renderAdminTestimonials() {
+    var container = document.getElementById('adminTestimonialsList');
+    if (!container) return;
+    if (testimonials.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-muted);text-align:center;">مفيش صور لسه</p>';
+        return;
+    }
+    var html = '<div class="deliveries-grid">';
+    testimonials.forEach(function(t) {
+        html += '<div class="delivery-card">' +
+            '<div class="card-body" style="padding:0;">' +
+            '<div class="img-box" onclick="openImageModal(\'' + t.image + '\')" style="aspect-ratio:9/16;">' +
+            '<img src="' + t.image + '" alt="' + escapeHtml(t.name) + '" loading="lazy">' +
+            '</div></div>' +
+            '<div class="card-footer" style="justify-content:space-between;align-items:center;">' +
+            '<span style="font-weight:700;">' + escapeHtml(t.name) + '</span>' +
+            '<button class="btn btn-danger btn-sm" onclick="deleteTestimonial(' + t.id + ')"><i class="fas fa-trash"></i> مسح</button>' +
+            '</div></div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function deleteTestimonial(id) {
+    if (!confirm('متأكد إنك عاوز تمسح الصورة دي؟')) return;
+    testimonials = testimonials.filter(function(t) { return t.id !== id; });
+    localStorage.setItem('stackstore_testimonials', JSON.stringify(testimonials));
+    renderTestimonials();
+    renderAdminTestimonials();
+    showToast('<i class="fas fa-trash"></i> تم المسح!', 'success');
+}
 
 /* ====== MOBILE ENHANCEMENTS ====== */
 
@@ -1464,4 +1613,13 @@ function toggleFaq(element) {
     if (!isActive) {
         item.classList.add('active');
     }
+}
+
+/* ====== GO TO TOP ====== */
+function goToTop() {
+    var productsSection = document.getElementById('products');
+    if (!productsSection.classList.contains('active')) {
+        showSection('products');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
