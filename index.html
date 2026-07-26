@@ -39,18 +39,51 @@
                 <button class="nav-tab" id="tabAdmin" data-section="admin"><i class="fas fa-lock"></i> لوحة الأدمن</button>
             </nav>
 
-            <div class="admin-badge" id="adminBadge">
-                <i class="fas fa-crown"></i>
-                <span>أنت الأدمن</span>
-            </div>
-        </header>
-    </div>
+            <!-- Hamburger Button (Mobile Only) -->
+            <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileMenu()">
+                <i class="fas fa-bars" id="hamburgerIcon"></i>
+            </button>
 
             <div class="admin-badge" id="adminBadge">
                 <i class="fas fa-crown"></i>
                 <span>أنت الأدمن</span>
             </div>
         </header>
+                <!-- Mobile Side Drawer -->
+        <div class="mobile-drawer" id="mobileDrawer">
+            <div class="drawer-header">
+                <div class="drawer-logo">
+                    <img src="logo.png" alt="Stack Store" onerror="this.style.display='none'">
+                    <span>Stack Store</span>
+                </div>
+                <button class="drawer-close" onclick="toggleMobileMenu()">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+            <nav class="drawer-nav">
+                <button class="drawer-item" onclick="showSection('products')">
+                    <i class="fas fa-cart-shopping"></i>
+                    <span>المنتجات</span>
+                </button>
+                <button class="drawer-item" onclick="showSection('deliveries')">
+                    <i class="fas fa-box"></i>
+                    <span>التسليمات</span>
+                </button>
+                <button class="drawer-item" onclick="showSection('reviews')">
+                    <i class="fas fa-star"></i>
+                    <span>الآراء</span>
+                </button>
+                <button class="drawer-item" onclick="showSection('terms')">
+                    <i class="fas fa-file-lines"></i>
+                    <span>الشروط والأحكام</span>
+                </button>
+                <button class="drawer-item" id="drawerAdminBtn" onclick="openAdminLogin()">
+                    <i class="fas fa-lock"></i>
+                    <span>لوحة الأدمن</span>
+                </button>
+            </nav>
+        </div>
+        <div class="drawer-overlay" id="drawerOverlay" onclick="toggleMobileMenu()"></div>
     </div>
 
     <!-- ====== SECTION: PRODUCTS ====== -->

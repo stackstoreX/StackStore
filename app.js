@@ -1,5 +1,6 @@
 // ====== STACK STORE - APP.JS ======
 // Complete Store with Products, Deliveries, Reviews & Admin
+// FIXED: All data now syncs to Supabase as primary source
 
 const ADMIN_CODE = 'STACK9';
 const ADMIN_KEY = 'stackstore_admin_device';
@@ -53,7 +54,6 @@ const sampleProducts = [
             { duration: '6 شهور', price: 220, originalPrice: 420 },
             { duration: 'سنة', price: 400, originalPrice: 840 }
         ],
-
         detail_image: 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=1200',
         created_at: new Date().toISOString()
     },
@@ -69,7 +69,6 @@ const sampleProducts = [
             { duration: '3 شهور', price: 90, originalPrice: 150 },
             { duration: 'سنة', price: 300, originalPrice: 600 }
         ],
-
         detail_image: 'https://images.unsplash.com/photo-1614680376593-902f74cf0d41?w=1200',
         created_at: new Date().toISOString()
     },
@@ -85,7 +84,6 @@ const sampleProducts = [
             { duration: '3 شهور', price: 100, originalPrice: 180 },
             { duration: 'سنة', price: 350, originalPrice: 720 }
         ],
-
         detail_image: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=1200',
         created_at: new Date().toISOString()
     },
@@ -101,7 +99,6 @@ const sampleProducts = [
             { duration: '3 شهور', price: 130, originalPrice: 240 },
             { duration: 'سنة', price: 450, originalPrice: 960 }
         ],
-
         detail_image: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=1200',
         created_at: new Date().toISOString()
     },
@@ -116,7 +113,6 @@ const sampleProducts = [
             { duration: 'شهر', price: 55, originalPrice: 85 },
             { duration: '3 شهور', price: 150, originalPrice: 255 }
         ],
-
         detail_image: 'https://images.unsplash.com/photo-1605901309584-818e25960a8f?w=1200',
         created_at: new Date().toISOString()
     },
@@ -130,7 +126,6 @@ const sampleProducts = [
         prices: [
             { duration: 'شهر', price: 60, originalPrice: 100 }
         ],
-
         detail_image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1200',
         created_at: new Date().toISOString()
     }
@@ -168,33 +163,64 @@ async function loadData() {
     renderSkeletons();
     if (!supabaseClient) await waitForSupabase();
 
-    var storedProducts = localStorage.getItem('stackstore_products');
-    if (storedProducts) {
-        products = JSON.parse(storedProducts);
-    } else {
-        products = sampleProducts;
-        localStorage.setItem('stackstore_products', JSON.stringify(products));
-    }
-
-    var storedCategories = localStorage.getItem('stackstore_categories');
-    if (storedCategories) {
-        categories = JSON.parse(storedCategories);
-    } else {
-        categories = defaultCategories;
-        localStorage.setItem('stackstore_categories', JSON.stringify(categories));
-    }
-
+    // ===== PRODUCTS =====
+    var hasSupabaseProducts = false;
     if (supabaseClient) {
         try {
             var res = await supabaseClient.from('products').select('*');
-            if (res.data && res.data.length > 0) products = res.data;
-        } catch (e) { console.log('Using local products'); }
+            if (res.data && res.data.length > 0) {
+                products = res.data;
+                try { localStorage.setItem('stackstore_products', JSON.stringify(products)); } catch(e) {}
+                hasSupabaseProducts = true;
+            }
+        } catch (e) {
+            console.log('Supabase products unavailable:', e.message);
+        }
+    }
+    
+    if (!hasSupabaseProducts) {
+        var storedProducts = localStorage.getItem('stackstore_products');
+        if (storedProducts) {
+            products = JSON.parse(storedProducts);
+        } else {
+            products = sampleProducts;
+        }
     }
 
+    // ===== CATEGORIES =====
+    var hasSupabaseCategories = false;
+    if (supabaseClient) {
+        try {
+            var catRes = await supabaseClient.from('categories').select('*');
+            if (catRes.data && catRes.data.length > 0) {
+                categories = catRes.data;
+                try { localStorage.setItem('stackstore_categories', JSON.stringify(categories)); } catch(e) {}
+                hasSupabaseCategories = true;
+            }
+        } catch (e) {
+            console.log('Supabase categories unavailable:', e.message);
+        }
+    }
+    
+    if (!hasSupabaseCategories) {
+        var storedCategories = localStorage.getItem('stackstore_categories');
+        if (storedCategories) {
+            categories = JSON.parse(storedCategories);
+        } else {
+            categories = defaultCategories;
+        }
+    }
+
+    // ===== DELIVERIES =====
     if (supabaseClient) {
         try {
             var delRes = await supabaseClient.from('deliveries').select('*').order('created_at', { ascending: false });
-            if (delRes.data) deliveries = delRes.data;
+            if (delRes.data && delRes.data.length > 0) {
+                deliveries = delRes.data;
+                try { localStorage.setItem('stackstore_deliveries', JSON.stringify(deliveries)); } catch(e) {}
+            } else {
+                deliveries = JSON.parse(localStorage.getItem('stackstore_deliveries')) || [];
+            }
         } catch (e) {
             deliveries = JSON.parse(localStorage.getItem('stackstore_deliveries')) || [];
         }
@@ -202,10 +228,16 @@ async function loadData() {
         deliveries = JSON.parse(localStorage.getItem('stackstore_deliveries')) || [];
     }
 
+    // ===== REVIEWS =====
     if (supabaseClient) {
         try {
             var revRes = await supabaseClient.from('reviews').select('*').order('created_at', { ascending: false });
-            if (revRes.data) reviews = revRes.data;
+            if (revRes.data && revRes.data.length > 0) {
+                reviews = revRes.data;
+                try { localStorage.setItem('stackstore_reviews', JSON.stringify(reviews)); } catch(e) {}
+            } else {
+                reviews = JSON.parse(localStorage.getItem('stackstore_reviews')) || [];
+            }
         } catch (e) {
             reviews = JSON.parse(localStorage.getItem('stackstore_reviews')) || [];
         }
@@ -213,12 +245,28 @@ async function loadData() {
         reviews = JSON.parse(localStorage.getItem('stackstore_reviews')) || [];
     }
 
+    // ===== TESTIMONIALS =====
+    var hasSupabaseTestimonials = false;
+    if (supabaseClient) {
+        try {
+            var testRes = await supabaseClient.from('testimonials').select('*');
+            if (testRes.data && testRes.data.length > 0) {
+                testimonials = testRes.data;
+                try { localStorage.setItem('stackstore_testimonials', JSON.stringify(testimonials)); } catch(e) {}
+                hasSupabaseTestimonials = true;
+            }
+        } catch (e) {
+            console.log('Supabase testimonials unavailable:', e.message);
+        }
+    }
+    
+    if (!hasSupabaseTestimonials) {
         var storedTestimonials = localStorage.getItem('stackstore_testimonials');
-    if (storedTestimonials) {
-        testimonials = JSON.parse(storedTestimonials);
-    } else {
-        testimonials = sampleTestimonials;
-        localStorage.setItem('stackstore_testimonials', JSON.stringify(testimonials));
+        if (storedTestimonials) {
+            testimonials = JSON.parse(storedTestimonials);
+        } else {
+            testimonials = sampleTestimonials;
+        }
     }
 
     renderTestimonials();
@@ -263,7 +311,7 @@ function setupEventListeners() {
         });
     });
 
-        setupUpload('testimonialUpload', 'testimonialFile', 'testimonialPreview', 'testimonialUpload', 'testimonialRemove');
+    setupUpload('testimonialUpload', 'testimonialFile', 'testimonialPreview', 'testimonialUpload', 'testimonialRemove');
     document.getElementById('btnSaveTestimonial').addEventListener('click', saveTestimonial);
     document.getElementById('testimonialModal').addEventListener('click', function(e) {
         if (e.target === this) closeTestimonialModal();
@@ -296,15 +344,20 @@ function setupEventListeners() {
             document.getElementById('imageModal').classList.remove('active');
             document.getElementById('productModal').classList.remove('active');
             document.getElementById('datePickerOverlay').classList.remove('active');
+            
+            // Close mobile drawer
+            var drawer = document.getElementById('mobileDrawer');
+            if (drawer && drawer.classList.contains('active')) {
+                toggleMobileMenu();
+            }
         }
     });
 
     setupDatePicker();
-        // <i class="fas fa-check-circle"></i> زر الرجوع في المتصفح / الموبايل
+
     window.addEventListener('popstate', function(e) {
         if (e.state && e.state.section) {
             if (e.state.section === 'products') {
-                // ارجع للمنتجات من غير ما تدفع state جديد
                 document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
                 document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
                 document.getElementById('products').classList.add('active');
@@ -316,7 +369,6 @@ function setupEventListeners() {
                 showSection(e.state.section, false);
             }
         } else {
-            // لو مفيش state (أول مرة)، رجّع للمنتجات
             showSection('products', false);
         }
     });
@@ -424,7 +476,7 @@ function renderProducts() {
         var bestPrice = p.prices && p.prices.length > 0 ? p.prices.reduce(function(prev, curr) {
             return prev.price < curr.price ? prev : curr;
         }) : null;
-        
+
         var discount = bestPrice && bestPrice.originalPrice ? Math.round((1 - bestPrice.price / bestPrice.originalPrice) * 100) : 0;
         var imgSrc = p.detail_image || p.image || PLACEHOLDER_IMG;
 
@@ -452,7 +504,6 @@ function showProductDetail(productId) {
     if (!p) return;
     currentProduct = p;
 
-    // <i class="fas fa-check-circle"></i> تغيير الرابط بدون ما يعمل ريفريش
     history.pushState({ section: 'productDetail', productId: productId }, '', '#product/' + productId);
 
     var statusClass = p.status || 'available';
@@ -474,8 +525,6 @@ function showProductDetail(productId) {
         pricesHtml += '</tbody></table>';
     }
 
-    var featuresHtml = "";
-
     var orderDisabled = p.status !== 'available' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '';
     var orderText = p.status === 'available' ? '<i class="fas fa-cart-shopping"></i> اطلب الآن عبر واتساب' : '<i class="fas fa-ban"></i> غير متاح حالياً';
 
@@ -495,7 +544,7 @@ function showProductDetail(productId) {
 
     document.getElementById('productDetailContent').innerHTML = html;
     renderProductReviews();
-    
+
     document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
     document.getElementById('productDetail').classList.add('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -593,7 +642,6 @@ function openProductModal(productId) {
         catSelect.value = p.category || (categories[1] ? categories[1].id : 'other');
         document.getElementById('prodStatus').value = p.status || 'available';
 
-
         var pricesContainer = document.getElementById('pricesContainer');
         pricesContainer.innerHTML = '';
         if (p.prices && p.prices.length > 0) {
@@ -677,7 +725,6 @@ async function saveProduct() {
     var category = document.getElementById('prodCategory').value;
     var status = document.getElementById('prodStatus').value;
 
-
     if (!name) { showToast('<i class="fas fa-circle-xmark"></i> أدخل اسم المنتج!', 'error'); return; }
 
     var image = imageUrl;
@@ -703,8 +750,6 @@ async function saveProduct() {
         }
     });
 
-
-
     var productData = {
         name: name,
         description: desc,
@@ -713,7 +758,6 @@ async function saveProduct() {
         category: category,
         status: status,
         prices: prices,
-
         created_at: new Date().toISOString()
     };
 
@@ -729,22 +773,59 @@ async function saveProduct() {
         products.unshift(productData);
     }
 
-    localStorage.setItem('stackstore_products', JSON.stringify(products));
+    // Save to localStorage (ignore if full)
+    try {
+        localStorage.setItem('stackstore_products', JSON.stringify(products));
+    } catch (e) {
+        console.warn('localStorage full, skipping local save:', e);
+    }
+
+    // Close modal immediately
     closeProductModal();
+
+    // Render immediately
     renderProducts();
     renderAdminProducts();
     updateStats();
     showToast('<i class="fas fa-check-circle"></i> تم حفظ المنتج بنجاح!', 'success');
+
+    // Sync to Supabase in background (non-blocking)
+    if (supabaseClient) {
+        try {
+            if (editingProductId) {
+                await supabaseClient.from('products').update(productData).eq('id', editingProductId);
+            } else {
+                await supabaseClient.from('products').insert([productData]);
+            }
+        } catch (e) {
+            console.log('Supabase sync failed:', e);
+        }
+    }
 }
 
-function deleteProduct(id) {
+async function deleteProduct(id) {
     if (!confirm('متأكد إنك عاوز تمسح المنتج دا؟')) return;
+    
     products = products.filter(function(p) { return p.id !== id; });
-    localStorage.setItem('stackstore_products', JSON.stringify(products));
+    
+    try {
+        localStorage.setItem('stackstore_products', JSON.stringify(products));
+    } catch (e) {
+        console.warn('localStorage full:', e);
+    }
+
     renderProducts();
     renderAdminProducts();
     updateStats();
     showToast('<i class="fas fa-trash"></i> تم مسح المنتج!', 'success');
+
+    if (supabaseClient) {
+        try {
+            await supabaseClient.from('products').delete().eq('id', id);
+        } catch (e) {
+            console.log('Supabase delete failed:', e);
+        }
+    }
 }
 
 function renderAdminProducts() {
@@ -803,28 +884,34 @@ async function addDelivery() {
 
         var paymentUrl = null;
         var deliveryUrl = null;
+        var deliveryData = null;
 
         if (supabaseClient) {
-            paymentUrl = await uploadToSupabaseStorage(paymentCompressed.file, 'payments');
-            progressBar.style.width = '85%';
-            deliveryUrl = await uploadToSupabaseStorage(deliveryCompressed.file, 'deliveries');
-            progressBar.style.width = '95%';
+            try {
+                paymentUrl = await uploadToSupabaseStorage(paymentCompressed.file, 'payments');
+                progressBar.style.width = '85%';
+                deliveryUrl = await uploadToSupabaseStorage(deliveryCompressed.file, 'deliveries');
+                progressBar.style.width = '95%';
 
-            var result = await supabaseClient.from('deliveries').insert([{
-                payment_image: paymentUrl,
-                delivery_image: deliveryUrl,
-                notes: notes,
-                delivery_date: dateInput || null,
-                created_at: new Date().toISOString()
-            }]).select();
+                var result = await supabaseClient.from('deliveries').insert([{
+                    payment_image: paymentUrl,
+                    delivery_image: deliveryUrl,
+                    notes: notes,
+                    delivery_date: dateInput || null,
+                    created_at: new Date().toISOString()
+                }]).select();
 
-            if (result.error) throw result.error;
-            deliveries.unshift(result.data[0]);
-        } else {
+                if (result.error) throw result.error;
+                deliveryData = result.data[0];
+            } catch (supaErr) {
+                console.log('Supabase delivery failed, using local:', supaErr);
+            }
+        }
+
+        if (!deliveryData) {
             var paymentPreview = document.getElementById('paymentPreview');
             var deliveryPreview = document.getElementById('deliveryPreview');
-
-            var delivery = {
+            deliveryData = {
                 id: Date.now(),
                 payment_image: paymentPreview.src,
                 delivery_image: deliveryPreview.src,
@@ -833,8 +920,14 @@ async function addDelivery() {
                 created_at: new Date().toISOString(),
                 date: new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
             };
-            deliveries.unshift(delivery);
+        }
+
+        deliveries.unshift(deliveryData);
+        
+        try {
             localStorage.setItem('stackstore_deliveries', JSON.stringify(deliveries));
+        } catch (e) {
+            console.warn('localStorage full:', e);
         }
 
         document.getElementById('deliveryNotes').value = '';
@@ -859,6 +952,18 @@ async function addDelivery() {
 async function deleteDelivery(id) {
     if (!confirm('متأكد إنك عاوز تمسح التسليم دا؟')) return;
 
+    deliveries = deliveries.filter(function(d) { return d.id !== id; });
+    
+    try {
+        localStorage.setItem('stackstore_deliveries', JSON.stringify(deliveries));
+    } catch (e) {
+        console.warn('localStorage full:', e);
+    }
+
+    renderDeliveries();
+    updateStats();
+    showToast('<i class="fas fa-trash"></i> تم المسح!', 'success');
+
     if (supabaseClient) {
         try {
             var delivery = deliveries.find(function(d) { return d.id === id; });
@@ -874,17 +979,9 @@ async function deleteDelivery(id) {
             }
             await supabaseClient.from('deliveries').delete().eq('id', id);
         } catch (err) {
-            console.error(err);
-            showToast('<i class="fas fa-circle-xmark"></i> خطأ في المسح', 'error');
-            return;
+            console.log('Supabase delivery delete failed:', err);
         }
     }
-
-    deliveries = deliveries.filter(function(d) { return d.id !== id; });
-    localStorage.setItem('stackstore_deliveries', JSON.stringify(deliveries));
-    renderDeliveries();
-    updateStats();
-    showToast('<i class="fas fa-trash"></i> تم المسح!', 'success');
 }
 
 function renderDeliveries() {
@@ -939,14 +1036,13 @@ async function addPublicReview() {
         date: new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
     };
 
-    if (supabaseClient) {
-        try {
-            await supabaseClient.from('reviews').insert([review]).select();
-        } catch (e) { console.error(e); }
-    }
-
     reviews.unshift(review);
-    localStorage.setItem('stackstore_reviews', JSON.stringify(reviews));
+    
+    try {
+        localStorage.setItem('stackstore_reviews', JSON.stringify(reviews));
+    } catch (e) {
+        console.warn('localStorage full:', e);
+    }
 
     document.getElementById('publicReviewerName').value = '';
     document.getElementById('publicReviewText').value = '';
@@ -956,10 +1052,31 @@ async function addPublicReview() {
     renderReviews();
     updateStats();
     showToast('<i class="fas fa-check-circle"></i> تم إرسال رأيك بنجاح! شكراً لك <i class="fas fa-star"></i>', 'success');
+
+    if (supabaseClient) {
+        try {
+            await supabaseClient.from('reviews').insert([review]);
+        } catch (e) {
+            console.log('Supabase review insert failed:', e);
+        }
+    }
 }
 
 async function deleteReview(id) {
     if (!confirm('متأكد إنك عاوز تمسح الرأي دا؟')) return;
+
+    reviews = reviews.filter(function(r) { return r.id !== id; });
+    
+    try {
+        localStorage.setItem('stackstore_reviews', JSON.stringify(reviews));
+    } catch (e) {
+        console.warn('localStorage full:', e);
+    }
+
+    renderReviews();
+    if (currentProduct) renderProductReviews();
+    updateStats();
+    showToast('<i class="fas fa-trash"></i> تم المسح!', 'success');
 
     if (supabaseClient) {
         try {
@@ -970,18 +1087,9 @@ async function deleteReview(id) {
             }
             await supabaseClient.from('reviews').delete().eq('id', id);
         } catch (err) {
-            console.error(err);
-            showToast('<i class="fas fa-circle-xmark"></i> خطأ في المسح', 'error');
-            return;
+            console.log('Supabase review delete failed:', err);
         }
     }
-
-    reviews = reviews.filter(function(r) { return r.id !== id; });
-    localStorage.setItem('stackstore_reviews', JSON.stringify(reviews));
-    renderReviews();
-    if (currentProduct) renderProductReviews();
-    updateStats();
-    showToast('<i class="fas fa-trash"></i> تم المسح!', 'success');
 }
 
 function renderReviews() {
@@ -1018,7 +1126,6 @@ function renderReviews() {
     container.innerHTML = html;
 }
 
-
 function renderAdminCategories() {
     var container = document.getElementById('adminCategoriesList');
     if (!container) return;
@@ -1042,7 +1149,7 @@ function renderAdminCategories() {
     container.innerHTML = html;
 }
 
-function openCategoryModal(catId) {
+async function openCategoryModal(catId) {
     var isEdit = !!catId;
     var name = '';
     var icon = '';
@@ -1052,12 +1159,12 @@ function openCategoryModal(catId) {
         name = cat.name;
         icon = cat.icon || '';
     }
-    var newName = prompt(isEdit ? '<i class="fas fa-pen-to-square"></i> تعديل اسم القسم:' : '<i class="fas fa-plus"></i> اسم القسم الجديد:', name);
+    var newName = prompt(isEdit ? 'تعديل اسم القسم:' : 'اسم القسم الجديد:', name);
     if (newName === null) return;
     newName = newName.trim();
     if (!newName) { showToast('<i class="fas fa-circle-xmark"></i> الاسم مطلوب!', 'error'); return; }
 
-    var newIcon = prompt('<i class="fas fa-palette"></i> أيقونة القسم (اختياري، مثل <i class="fas fa-tv"></i> <i class="fas fa-music"></i> <i class="fas fa-gamepad"></i>):', icon);
+    var newIcon = prompt('أيقونة القسم (اختياري):', icon);
     if (newIcon === null) newIcon = '';
     newIcon = newIcon.trim();
 
@@ -1072,28 +1179,68 @@ function openCategoryModal(catId) {
         categories.push({ id: newId, name: newName, icon: newIcon });
     }
 
-    localStorage.setItem('stackstore_categories', JSON.stringify(categories));
+    try {
+        localStorage.setItem('stackstore_categories', JSON.stringify(categories));
+    } catch (e) {
+        console.warn('localStorage full:', e);
+    }
+
     setupFilters();
     renderAdminCategories();
     renderAdminProducts();
     renderProducts();
     showToast('<i class="fas fa-check-circle"></i> تم حفظ القسم بنجاح!', 'success');
+
+    if (supabaseClient) {
+        try {
+            if (isEdit) {
+                await supabaseClient.from('categories').update({ name: newName, icon: newIcon }).eq('id', catId);
+            } else {
+                var newCat = categories[categories.length - 1];
+                await supabaseClient.from('categories').insert([newCat]);
+            }
+        } catch (e) {
+            console.log('Supabase category sync failed:', e);
+        }
+    }
 }
 
-function deleteCategory(catId) {
+async function deleteCategory(catId) {
     if (catId === 'all') { showToast('<i class="fas fa-circle-xmark"></i> لا يمكن حذف القسم الافتراضي!', 'error'); return; }
     var productsInCat = products.filter(function(p) { return p.category === catId; });
     if (productsInCat.length > 0) {
-        if (!confirm('<i class="fas fa-triangle-exclamation"></i> في ' + productsInCat.length + ' منتج في القسم دا. هيتنقلوا لـ "أخرى". متأكد؟')) return;
+        if (!confirm('في ' + productsInCat.length + ' منتج في القسم دا. هيتنقلوا لـ "أخرى". متأكد؟')) return;
         products.forEach(function(p) {
             if (p.category === catId) p.category = 'other';
         });
-        localStorage.setItem('stackstore_products', JSON.stringify(products));
+        try {
+            localStorage.setItem('stackstore_products', JSON.stringify(products));
+        } catch (e) {
+            console.warn('localStorage full:', e);
+        }
+        if (supabaseClient) {
+            try {
+                await supabaseClient.from('products').update({ category: 'other' }).eq('category', catId);
+            } catch (e) { console.log(e); }
+        }
     } else {
-        if (!confirm('<i class="fas fa-trash"></i> متأكد إنك عاوز تمسح القسم "' + getCategoryName(catId) + '"؟')) return;
+        if (!confirm('متأكد إنك عاوز تمسح القسم "' + getCategoryName(catId) + '"؟')) return;
     }
+    
     categories = categories.filter(function(c) { return c.id !== catId; });
-    localStorage.setItem('stackstore_categories', JSON.stringify(categories));
+    
+    try {
+        localStorage.setItem('stackstore_categories', JSON.stringify(categories));
+    } catch (e) {
+        console.warn('localStorage full:', e);
+    }
+
+    if (supabaseClient) {
+        try {
+            await supabaseClient.from('categories').delete().eq('id', catId);
+        } catch (e) { console.log(e); }
+    }
+    
     if (currentFilter === catId) {
         currentFilter = 'all';
         document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active'); });
@@ -1169,13 +1316,46 @@ function renderAdminReviews() {
     container.innerHTML = html;
 }
 
+function toggleMobileMenu() {
+    var drawer = document.getElementById('mobileDrawer');
+    var overlay = document.getElementById('drawerOverlay');
+    var icon = document.getElementById('hamburgerIcon');
+    
+    if (!drawer) return;
+    
+    var isOpen = drawer.classList.contains('active');
+    
+    if (isOpen) {
+        drawer.classList.remove('active');
+        overlay.classList.remove('active');
+        if (icon) icon.className = 'fas fa-bars';
+        document.body.style.overflow = '';
+    } else {
+        drawer.classList.add('active');
+        overlay.classList.add('active');
+        if (icon) icon.className = 'fas fa-xmark';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
 function checkAdminStatus() {
     if (isAdmin) {
         document.getElementById('adminBadge').classList.add('active');
         document.getElementById('addDeliveryForm').classList.add('active');
+        
+        // Desktop tab
         var adminTab = document.getElementById('tabAdmin');
-        adminTab.innerHTML = '<i class="fas fa-gear"></i><span>لوحة التحكم</span>';
-        adminTab.onclick = function() { showSection('admin'); };
+        if (adminTab) {
+            adminTab.innerHTML = '<i class="fas fa-gear"></i><span>لوحة التحكم</span>';
+            adminTab.onclick = function() { showSection('admin'); };
+        }
+        
+        // Mobile drawer button
+        var drawerAdminBtn = document.getElementById('drawerAdminBtn');
+        if (drawerAdminBtn) {
+            drawerAdminBtn.innerHTML = '<i class="fas fa-gear"></i><span>لوحة التحكم</span>';
+            drawerAdminBtn.onclick = function() { showSection('admin'); toggleMobileMenu(); };
+        }
     }
 }
 
@@ -1216,7 +1396,18 @@ function logoutAdmin() {
 }
 
 function showSection(sectionId, pushState) {
-    pushState = pushState !== false; // default true
+    pushState = pushState !== false;
+
+    // إغلاق قائمة الموبايل تلقائياً لو مفتوحة
+    var drawer = document.getElementById('mobileDrawer');
+    var overlay = document.getElementById('drawerOverlay');
+    var icon = document.getElementById('hamburgerIcon');
+    if (drawer && drawer.classList.contains('active')) {
+        drawer.classList.remove('active');
+        if (overlay) overlay.classList.remove('active');
+        if (icon) icon.className = 'fas fa-bars';
+        document.body.style.overflow = '';
+    }
 
     if (sectionId === 'admin' && !isAdmin) { openAdminLogin(); return; }
     
@@ -1230,11 +1421,11 @@ function showSection(sectionId, pushState) {
     else if (sectionId === 'deliveries') document.getElementById('tabDeliveries').classList.add('active');
     else if (sectionId === 'reviews') document.getElementById('tabReviews').classList.add('active');
     else if (sectionId === 'terms') document.getElementById('tabTerms').classList.add('active');
-    else if (sectionId === 'admin') {        document.getElementById('tabAdmin').classList.add('active');
+    else if (sectionId === 'admin') {
+        document.getElementById('tabAdmin').classList.add('active');
         renderAdminSection();
     }
     
-    // <i class="fas fa-check-circle"></i> غيّر الرابط لما يروح لقسم تاني (إلا لو جاي من زر الرجوع)
     if (pushState && sectionId !== 'productDetail') {
         history.pushState({ section: sectionId }, '', '#' + sectionId);
     }
@@ -1485,16 +1676,29 @@ async function saveTestimonial() {
     var testimonial = {
         id: Date.now(),
         image: image,
-        detail_image: detailImage,
         name: name
     };
 
     testimonials.unshift(testimonial);
-    localStorage.setItem('stackstore_testimonials', JSON.stringify(testimonials));
+    
+    try {
+        localStorage.setItem('stackstore_testimonials', JSON.stringify(testimonials));
+    } catch (e) {
+        console.warn('localStorage full:', e);
+    }
+
     closeTestimonialModal();
     renderTestimonials();
     renderAdminTestimonials();
     showToast('<i class="fas fa-check-circle"></i> تم حفظ صورة الرأي!', 'success');
+
+    if (supabaseClient) {
+        try {
+            await supabaseClient.from('testimonials').insert([testimonial]);
+        } catch (e) {
+            console.log('Supabase testimonial insert failed:', e);
+        }
+    }
 }
 
 function renderAdminTestimonials() {
@@ -1520,13 +1724,28 @@ function renderAdminTestimonials() {
     container.innerHTML = html;
 }
 
-function deleteTestimonial(id) {
+async function deleteTestimonial(id) {
     if (!confirm('متأكد إنك عاوز تمسح الصورة دي؟')) return;
+    
     testimonials = testimonials.filter(function(t) { return t.id !== id; });
-    localStorage.setItem('stackstore_testimonials', JSON.stringify(testimonials));
+    
+    try {
+        localStorage.setItem('stackstore_testimonials', JSON.stringify(testimonials));
+    } catch (e) {
+        console.warn('localStorage full:', e);
+    }
+
     renderTestimonials();
     renderAdminTestimonials();
     showToast('<i class="fas fa-trash"></i> تم المسح!', 'success');
+
+    if (supabaseClient) {
+        try {
+            await supabaseClient.from('testimonials').delete().eq('id', id);
+        } catch (e) {
+            console.log('Supabase testimonial delete failed:', e);
+        }
+    }
 }
 
 /* ====== MOBILE ENHANCEMENTS ====== */
@@ -1621,12 +1840,10 @@ function toggleFaq(element) {
     var item = element.parentElement;
     var isActive = item.classList.contains('active');
 
-    // Close all
     document.querySelectorAll('.faq-item').forEach(function(faq) {
         faq.classList.remove('active');
     });
 
-    // Open clicked if it was closed
     if (!isActive) {
         item.classList.add('active');
     }
