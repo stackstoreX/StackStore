@@ -595,6 +595,17 @@
                 <i class="fas fa-gear"></i>
                 إعدادات الأدمن
             </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px;">
+                <button class="btn btn-primary" onclick="exportData()" style="flex:1;justify-content:center;">
+                    <span><i class="fas fa-download"></i></span>
+                    <span>تحميل نسخة احتياطية</span>
+                </button>
+                <button class="btn btn-success" onclick="document.getElementById('importFile').click()" style="flex:1;justify-content:center;">
+                    <span><i class="fas fa-upload"></i></span>
+                    <span>استرجاع نسخة</span>
+                </button>
+                <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(this)">
+            </div>
             <button class="btn btn-danger" onclick="logoutAdmin()" style="width:100%;justify-content:center;">
                 <span><i class="fas fa-right-from-bracket"></i></span>
                 <span>تسجيل الخروج من الأدمن</span>

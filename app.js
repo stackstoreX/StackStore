@@ -780,26 +780,30 @@ async function saveProduct() {
         console.warn('localStorage full, skipping local save:', e);
     }
 
-    // Close modal immediately
-    closeProductModal();
-
-    // Render immediately
+     // Render immediately
     renderProducts();
     renderAdminProducts();
     updateStats();
-    showToast('<i class="fas fa-check-circle"></i> تم حفظ المنتج بنجاح!', 'success');
 
-    // Sync to Supabase in background (non-blocking)
+    // Sync to Supabase (wait for result)
     if (supabaseClient) {
         try {
             if (editingProductId) {
-                await supabaseClient.from('products').update(productData).eq('id', editingProductId);
+                var { error } = await supabaseClient.from('products').update(productData).eq('id', editingProductId);
+                if (error) throw error;
             } else {
-                await supabaseClient.from('products').insert([productData]);
+                var { error } = await supabaseClient.from('products').insert([productData]);
+                if (error) throw error;
             }
+            closeProductModal();
+            showToast('<i class="fas fa-check-circle"></i> تم حفظ المنتج بنجاح!', 'success');
         } catch (e) {
-            console.log('Supabase sync failed:', e);
+            closeProductModal();
+            showToast('<i class="fas fa-triangle-exclamation"></i> تم الحفظ محلياً فقط - Supabase غير متاح', 'warning');
         }
+    } else {
+        closeProductModal();
+        showToast('<i class="fas fa-check-circle"></i> تم الحفظ محلياً!', 'success');
     }
 }
 
@@ -1687,17 +1691,22 @@ async function saveTestimonial() {
         console.warn('localStorage full:', e);
     }
 
-    closeTestimonialModal();
-    renderTestimonials();
+     renderTestimonials();
     renderAdminTestimonials();
-    showToast('<i class="fas fa-check-circle"></i> تم حفظ صورة الرأي!', 'success');
 
     if (supabaseClient) {
         try {
-            await supabaseClient.from('testimonials').insert([testimonial]);
+            var { error } = await supabaseClient.from('testimonials').insert([testimonial]);
+            if (error) throw error;
+            closeTestimonialModal();
+            showToast('<i class="fas fa-check-circle"></i> تم حفظ صورة الرأي!', 'success');
         } catch (e) {
-            console.log('Supabase testimonial insert failed:', e);
+            closeTestimonialModal();
+            showToast('<i class="fas fa-triangle-exclamation"></i> تم الحفظ محلياً فقط', 'warning');
         }
+    } else {
+        closeTestimonialModal();
+        showToast('<i class="fas fa-check-circle"></i> تم الحفظ محلياً!', 'success');
     }
 }
 
@@ -1870,3 +1879,44 @@ document.addEventListener('dragstart', function(e) {
         e.preventDefault();
     }
 });
+
+function exportData() {
+    var data = {
+        products: products,
+        categories: categories,
+        deliveries: deliveries,
+        reviews: reviews,
+        testimonials: testimonials,
+        exported_at: new Date().toISOString()
+    };
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'stackstore-backup-' + new Date().toISOString().slice(0,10) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('<i class="fas fa-check-circle"></i> تم تحميل النسخة الاحتياطية!', 'success');
+}
+
+function importData(input) {
+    var file = input.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            var data = JSON.parse(e.target.result);
+            if (data.products) { products = data.products; localStorage.setItem('stackstore_products', JSON.stringify(products)); }
+            if (data.categories) { categories = data.categories; localStorage.setItem('stackstore_categories', JSON.stringify(categories)); }
+            if (data.deliveries) { deliveries = data.deliveries; localStorage.setItem('stackstore_deliveries', JSON.stringify(deliveries)); }
+            if (data.reviews) { reviews = data.reviews; localStorage.setItem('stackstore_reviews', JSON.stringify(reviews)); }
+            if (data.testimonials) { testimonials = data.testimonials; localStorage.setItem('stackstore_testimonials', JSON.stringify(testimonials)); }
+            renderProducts(); renderAdminProducts(); renderDeliveries(); renderReviews(); renderTestimonials(); renderAdminTestimonials(); updateStats(); setupFilters();
+            showToast('<i class="fas fa-check-circle"></i> تم استرجاع البيانات بنجاح!', 'success');
+        } catch (err) {
+            showToast('<i class="fas fa-circle-xmark"></i> ملف غير صالح!', 'error');
+        }
+    };
+    reader.readAsText(file);
+    input.value = '';
+}
