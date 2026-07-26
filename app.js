@@ -6,8 +6,8 @@ const ADMIN_CODE = 'STACK9';
 const ADMIN_KEY = 'stackstore_admin_device';
 const WHATSAPP_NUMBER = '201018484572';
 
-const SUPABASE_URL = 'https://vakfdtxobojpvkiiscdx.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZha2ZkdHhvYm9qcHZraWlzY2R4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NjUyNDUsImV4cCI6MjEwMDI0MTI0NX0.NCbE_nETiFChKsFk4IYFPG3_dMslNRlVK0kN1ITrXXQ';
+const SUPABASE_URL = 'https://itmsrggznasayrtckxgt.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0bXNyZ2d6bmFzYXlydGNreGd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwODQxMzMsImV4cCI6MjEwMDY2MDEzM30.FWS3hIbcVhlln-iEKN-8HD0-y7ohwhIDoKZ27xrE4hs';
 
 let supabaseClient = null;
 let products = [];
