@@ -15,12 +15,11 @@ let deliveries = [];
 let reviews = [];
 let categories = [];
 const defaultCategories = [
-    { id: 'all', name: 'الكل', icon: '<i class="fas fa-home"></i>' },
-    { id: 'streaming', name: 'بث', icon: '<i class="fas fa-tv"></i>' },
-    { id: 'music', name: 'موسيقى', icon: '<i class="fas fa-music"></i>' },
-    { id: 'gaming', name: 'ألعاب', icon: '<i class="fas fa-gamepad"></i>' },
-    { id: 'vpn', name: 'VPN', icon: '<i class="fas fa-lock"></i>' },
-    { id: 'other', name: 'أخرى', icon: '<i class="fas fa-box"></i>' }
+    { id: 'all', name: 'الكل', icon: '<i class="fas fa-layer-group"></i>' },
+    { id: 'editing', name: 'مونتاج', icon: '<i class="fas fa-film"></i>' },
+    { id: 'design', name: 'تصميم', icon: '<i class="fas fa-pen-nib"></i>' },
+    { id: 'ai', name: 'Ai', icon: '<i class="fas fa-robot"></i>' },
+    { id: 'other', name: 'أخرى', icon: '<i class="fas fa-box-open"></i>' }
 ];
 let isAdmin = false;
 let isLoading = true;
