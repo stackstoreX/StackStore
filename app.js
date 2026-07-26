@@ -3,7 +3,7 @@
 
 const ADMIN_CODE = 'STACK9';
 const ADMIN_KEY = 'stackstore_admin_device';
-const WHATSAPP_NUMBER = '201000000000';
+const WHATSAPP_NUMBER = '201018484572';
 
 const SUPABASE_URL = 'https://vakfdtxobojpvkiiscdx.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZha2ZkdHhvYm9qcHZraWlzY2R4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NjUyNDUsImV4cCI6MjEwMDI0MTI0NX0.NCbE_nETiFChKsFk4IYFPG3_dMslNRlVK0kN1ITrXXQ';
@@ -53,7 +53,8 @@ const sampleProducts = [
             { duration: '6 شهور', price: 220, originalPrice: 420 },
             { duration: 'سنة', price: 400, originalPrice: 840 }
         ],
-        features: ['4K UHD', '4 شاشات', 'بدون إعلانات', 'تفعيل فوري', 'دعم جميع الأجهزة'],
+
+        detail_image: 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=1200',
         created_at: new Date().toISOString()
     },
     {
@@ -68,7 +69,8 @@ const sampleProducts = [
             { duration: '3 شهور', price: 90, originalPrice: 150 },
             { duration: 'سنة', price: 300, originalPrice: 600 }
         ],
-        features: ['بدون إعلانات', 'جودة عالية', 'تخطي غير محدود', 'تحميل Offline'],
+
+        detail_image: 'https://images.unsplash.com/photo-1614680376593-902f74cf0d41?w=1200',
         created_at: new Date().toISOString()
     },
     {
@@ -83,7 +85,8 @@ const sampleProducts = [
             { duration: '3 شهور', price: 100, originalPrice: 180 },
             { duration: 'سنة', price: 350, originalPrice: 720 }
         ],
-        features: ['بدون إعلانات', 'YouTube Music', 'تحميل Offline', 'تشغيل بالخلفية'],
+
+        detail_image: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=1200',
         created_at: new Date().toISOString()
     },
     {
@@ -98,7 +101,8 @@ const sampleProducts = [
             { duration: '3 شهور', price: 130, originalPrice: 240 },
             { duration: 'سنة', price: 450, originalPrice: 960 }
         ],
-        features: ['سيرفرات 94 دولة', 'سرعة فائقة', 'تشفير AES-256', '5 أجهزة'],
+
+        detail_image: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=1200',
         created_at: new Date().toISOString()
     },
     {
@@ -112,7 +116,8 @@ const sampleProducts = [
             { duration: 'شهر', price: 55, originalPrice: 85 },
             { duration: '3 شهور', price: 150, originalPrice: 255 }
         ],
-        features: ['100+ لعبة', 'Xbox Live Gold', 'EA Play', 'Cloud Gaming'],
+
+        detail_image: 'https://images.unsplash.com/photo-1605901309584-818e25960a8f?w=1200',
         created_at: new Date().toISOString()
     },
     {
@@ -125,7 +130,8 @@ const sampleProducts = [
         prices: [
             { duration: 'شهر', price: 60, originalPrice: 100 }
         ],
-        features: ['GPT-4', 'أدوات متقدمة', 'سرعة أعلى', 'أولوية الوصول'],
+
+        detail_image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1200',
         created_at: new Date().toISOString()
     }
 ];
@@ -247,6 +253,7 @@ function setupEventListeners() {
     setupUpload('deliveryUpload', 'deliveryFile', 'deliveryPreview', 'deliveryUpload', 'deliveryRemove');
     setupUpload('reviewUpload', 'reviewFile', 'reviewPreview', 'reviewUpload', 'reviewRemove');
     setupUpload('productImageUpload', 'productImageFile', 'productImagePreview', 'productImageUpload', 'productImageRemove');
+    setupUpload('productDetailImageUpload', 'productDetailImageFile', 'productDetailImagePreview', 'productDetailImageUpload', 'productDetailImageRemove');
 
     document.querySelectorAll('.nav-tab').forEach(function(tab) {
         tab.addEventListener('click', function() {
@@ -419,7 +426,7 @@ function renderProducts() {
         }) : null;
         
         var discount = bestPrice && bestPrice.originalPrice ? Math.round((1 - bestPrice.price / bestPrice.originalPrice) * 100) : 0;
-        var imgSrc = p.image || PLACEHOLDER_IMG;
+        var imgSrc = p.detail_image || p.image || PLACEHOLDER_IMG;
 
         html += '<div class="product-card-wrapper">' +
             '<div class="product-card" onclick="showProductDetail(' + p.id + ')">' +
@@ -450,7 +457,7 @@ function showProductDetail(productId) {
 
     var statusClass = p.status || 'available';
     var statusText = statusClass === 'available' ? '<i class="fas fa-check-circle"></i> متاح' : statusClass === 'out_of_stock' ? '<i class="fas fa-circle-xmark"></i> نفذت الكمية' : '<i class="fas fa-clock"></i> قريباً';
-    var imgSrc = p.image || PLACEHOLDER_IMG;
+    var imgSrc = p.detail_image || p.image || PLACEHOLDER_IMG;
 
     var pricesHtml = '';
     if (p.prices && p.prices.length > 0) {
@@ -467,14 +474,7 @@ function showProductDetail(productId) {
         pricesHtml += '</tbody></table>';
     }
 
-    var featuresHtml = '';
-    if (p.features && p.features.length > 0) {
-        featuresHtml = '<div class="detail-features">';
-        p.features.forEach(function(f) {
-            featuresHtml += '<span class="feature-tag"><i class="fas fa-wand-magic-sparkles"></i> ' + escapeHtml(f) + '</span>';
-        });
-        featuresHtml += '</div>';
-    }
+    var featuresHtml = "";
 
     var orderDisabled = p.status !== 'available' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '';
     var orderText = p.status === 'available' ? '<i class="fas fa-cart-shopping"></i> اطلب الآن عبر واتساب' : '<i class="fas fa-ban"></i> غير متاح حالياً';
@@ -487,7 +487,6 @@ function showProductDetail(productId) {
         '<div class="product-detail-info">' +
         '<h2>' + escapeHtml(p.name) + ' <span class="status-badge ' + statusClass + '">' + statusText + '</span></h2>' +
         '<p class="detail-desc">' + escapeHtml(p.description) + '</p>' +
-        featuresHtml +
         '</div></div>' +
         '<div class="card-title"><span class="icon"><i class="fas fa-coins"></i></span>الأسعار والمدد</div>' +
         pricesHtml +
@@ -593,7 +592,7 @@ function openProductModal(productId) {
         });
         catSelect.value = p.category || (categories[1] ? categories[1].id : 'other');
         document.getElementById('prodStatus').value = p.status || 'available';
-        document.getElementById('prodFeatures').value = p.features ? p.features.join(', ') : '';
+
 
         var pricesContainer = document.getElementById('pricesContainer');
         pricesContainer.innerHTML = '';
@@ -612,6 +611,14 @@ function openProductModal(productId) {
             document.getElementById('productImageUpload').querySelector('.upload-content').style.display = 'none';
             document.getElementById('productImageRemove').classList.add('show');
         }
+        document.getElementById('prodDetailImageUrl').value = p.detail_image || '';
+        if (p.detail_image) {
+            document.getElementById('productDetailImagePreview').src = p.detail_image;
+            document.getElementById('productDetailImagePreview').classList.add('show');
+            document.getElementById('productDetailImageUpload').classList.add('has-image');
+            document.getElementById('productDetailImageUpload').querySelector('.upload-content').style.display = 'none';
+            document.getElementById('productDetailImageRemove').classList.add('show');
+        }
     } else {
         document.getElementById('prodName').value = '';
         document.getElementById('prodDesc').value = '';
@@ -627,10 +634,11 @@ function openProductModal(productId) {
         });
         catSelect.value = categories[1] ? categories[1].id : 'other';
         document.getElementById('prodStatus').value = 'available';
-        document.getElementById('prodFeatures').value = '';
         document.getElementById('pricesContainer').innerHTML = '';
         addPriceRow();
         removeImage('productImageFile', 'productImagePreview', 'productImageUpload', 'productImageRemove');
+        document.getElementById('prodDetailImageUrl').value = '';
+        removeImage('productDetailImageFile', 'productDetailImagePreview', 'productDetailImageUpload', 'productDetailImageRemove');
     }
 
     document.getElementById('productModal').classList.add('active');
@@ -668,7 +676,7 @@ async function saveProduct() {
     var imageUrl = document.getElementById('prodImageUrl').value.trim();
     var category = document.getElementById('prodCategory').value;
     var status = document.getElementById('prodStatus').value;
-    var featuresStr = document.getElementById('prodFeatures').value.trim();
+
 
     if (!name) { showToast('<i class="fas fa-circle-xmark"></i> أدخل اسم المنتج!', 'error'); return; }
 
@@ -676,6 +684,13 @@ async function saveProduct() {
     var preview = document.getElementById('productImagePreview');
     if (preview.src && preview.classList.contains('show') && preview.src.startsWith('data:')) {
         image = preview.src;
+    }
+
+    var detailImageUrl = document.getElementById('prodDetailImageUrl').value.trim();
+    var detailImage = detailImageUrl;
+    var detailPreview = document.getElementById('productDetailImagePreview');
+    if (detailPreview.src && detailPreview.classList.contains('show') && detailPreview.src.startsWith('data:')) {
+        detailImage = detailPreview.src;
     }
 
     var prices = [];
@@ -688,16 +703,17 @@ async function saveProduct() {
         }
     });
 
-    var features = featuresStr ? featuresStr.split(',').map(function(f) { return f.trim(); }).filter(function(f) { return f; }) : [];
+
 
     var productData = {
         name: name,
         description: desc,
         image: image,
+        detail_image: detailImage,
         category: category,
         status: status,
         prices: prices,
-        features: features,
+
         created_at: new Date().toISOString()
     };
 
@@ -1469,6 +1485,7 @@ async function saveTestimonial() {
     var testimonial = {
         id: Date.now(),
         image: image,
+        detail_image: detailImage,
         name: name
     };
 

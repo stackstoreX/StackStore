@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="style.css">
     <base target="_blank">
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
     <div class="bg-anim"></div>
@@ -56,18 +57,7 @@
     <section id="products" class="section active">
         <!-- Hero -->
         <div class="hero">
-            <div class="hero-content">
-                <div class="hero-logo">
-                    <img src="logo.png" alt="Stack Store" onerror="this.style.display='none'">
-                </div>
-                <h2>اشتراكاتك المفضلة بأرخص الأسعار</h2>
-                <p>Netflix, Spotify, YouTube, VPN وأكتر — تفعيل فوري وضمان كامل</p>
-                <div class="trust-badges">
-                    <span class="trust-badge"><i class="fas fa-bolt"></i> تفعيل فوري</span>
-                    <span class="trust-badge"><i class="fas fa-shield-halved"></i> ضمان 100%</span>
-                    <span class="trust-badge"><i class="fas fa-headset"></i> دعم 24/7</span>
-                </div>
-            </div>
+            <img src="hero-banner.png" alt="Stack Store Banner" class="hero-img">
         </div>
 
         <!-- Filters -->
@@ -613,18 +603,32 @@
                 <textarea id="prodDesc" placeholder="وصف المنتج..."></textarea>
             </div>
             <div class="form-group">
-                <label><i class="fas fa-image"></i> صورة المنتج</label>
+                <label><i class="fas fa-image"></i> صورة المنتج (الكارت)</label>
                 <div class="upload-area" id="productImageUpload">
                     <input type="file" id="productImageFile" accept="image/*">
                     <div class="upload-content">
                         <div class="upload-icon"><i class="fas fa-image"></i></div>
-                        <div class="upload-text">اضغط لرفع صورة المنتج</div>
+                        <div class="upload-text">اضغط لرفع صورة الكارت</div>
                     </div>
                     <img class="upload-preview" id="productImagePreview" alt="معاينة">
                 </div>
                 <p style="color:var(--text-muted);font-size:0.8rem;margin-top:8px;text-align:center;">أو أدخل رابط الصورة:</p>
                 <input type="text" id="prodImageUrl" placeholder="https://..." style="margin-top:8px;">
                 <button class="upload-remove" id="productImageRemove"><i class="fas fa-xmark"></i> إزالة الصورة</button>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-images"></i> صورة تفاصيل المنتج</label>
+                <div class="upload-area" id="productDetailImageUpload">
+                    <input type="file" id="productDetailImageFile" accept="image/*">
+                    <div class="upload-content">
+                        <div class="upload-icon"><i class="fas fa-images"></i></div>
+                        <div class="upload-text">اضغط لرفع صورة التفاصيل</div>
+                    </div>
+                    <img class="upload-preview" id="productDetailImagePreview" alt="معاينة">
+                </div>
+                <p style="color:var(--text-muted);font-size:0.8rem;margin-top:8px;text-align:center;">أو أدخل رابط الصورة:</p>
+                <input type="text" id="prodDetailImageUrl" placeholder="https://..." style="margin-top:8px;">
+                <button class="upload-remove" id="productDetailImageRemove"><i class="fas fa-xmark"></i> إزالة الصورة</button>
             </div>
             <div class="form-group">
                 <label><i class="fas fa-tag"></i> التصنيف</label>
@@ -651,10 +655,7 @@
                     <span>إضافة مدة</span>
                 </button>
             </div>
-            <div class="form-group">
-                <label><i class="fas fa-wand-magic-sparkles"></i> المميزات (افصل بفاصلة)</label>
-                <input type="text" id="prodFeatures" placeholder="4K, 4 شاشات, بدون إعلانات">
-            </div>
+            
             <div class="form-group">
                 <label><i class="fas fa-chart-simple"></i> الحالة</label>
                 <select id="prodStatus">
