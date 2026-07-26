@@ -1857,3 +1857,16 @@ function goToTop() {
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
+// ====== DISABLE IMAGE SAVE (Right-click & Long-press) ======
+document.addEventListener('contextmenu', function(e) {
+    if (e.target.tagName === 'IMG' || (e.target.closest && e.target.closest('img'))) {
+        e.preventDefault();
+        return false;
+    }
+});
+document.addEventListener('dragstart', function(e) {
+    if (e.target.tagName === 'IMG') {
+        e.preventDefault();
+    }
+});
