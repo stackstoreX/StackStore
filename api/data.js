@@ -1,6 +1,8 @@
-// api/data.js
 export default async function handler(req, res) {
-  res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+  // ❌ منع أي Cache خالص
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.setHeader('Access-Control-Allow-Origin', '*');
 
   const SUPABASE_URL = 'https://itmsrggznasayrtckxgt.supabase.co';
@@ -12,27 +14,58 @@ export default async function handler(req, res) {
     'Content-Type': 'application/json'
   };
 
+  // ⏱️ Timeout لكل request لوحده (8 ثواني)
+  const fetchWithTimeout = (url, options, timeout = 8000) => {
+    return Promise.race([
+      fetch(url, options),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), timeout)
+      )
+    ]);
+  };
+
+  // 🔄 Retry mechanism (يحاول 3 مرات)
+  const fetchWithRetry = async (url, options, retries = 2) => {
+    for (let i = 0; i <= retries; i++) {
+      try {
+        const response = await fetchWithTimeout(url, options);
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(`HTTP ${response.status}: ${text}`);
+        }
+        return await response.json();
+      } catch (err) {
+        if (i === retries) throw err;
+        await new Promise(r => setTimeout(r, 600 * (i + 1))); // wait 600ms, 1200ms
+      }
+    }
+  };
+
   try {
-    const [productsRes, categoriesRes, deliveriesRes, reviewsRes, testimonialsRes] = await Promise.all([
-      fetch(`${SUPABASE_URL}/rest/v1/products?select=*&order=sort_order.asc`, { headers }),
-      fetch(`${SUPABASE_URL}/rest/v1/categories?select=*&order=sort_order.asc`, { headers }),
-      fetch(`${SUPABASE_URL}/rest/v1/deliveries?select=*&order=created_at.desc`, { headers }),
-      fetch(`${SUPABASE_URL}/rest/v1/reviews?select=*&order=created_at.desc`, { headers }),
-      fetch(`${SUPABASE_URL}/rest/v1/testimonials?select=*`, { headers })
-    ]);
-
     const [products, categories, deliveries, reviews, testimonials] = await Promise.all([
-      productsRes.json(),
-      categoriesRes.json(),
-      deliveriesRes.json(),
-      reviewsRes.json(),
-      testimonialsRes.json()
+      fetchWithRetry(`${SUPABASE_URL}/rest/v1/products?select=*&order=sort_order.asc.nullslast`, { headers }),
+      fetchWithRetry(`${SUPABASE_URL}/rest/v1/categories?select=*&order=sort_order.asc.nullslast`, { headers }),
+      fetchWithRetry(`${SUPABASE_URL}/rest/v1/deliveries?select=*&order=created_at.desc`, { headers }),
+      fetchWithRetry(`${SUPABASE_URL}/rest/v1/reviews?select=*&order=created_at.desc`, { headers }),
+      fetchWithRetry(`${SUPABASE_URL}/rest/v1/testimonials?select=*`, { headers })
     ]);
 
-    res.status(200).json({ products, categories, deliveries, reviews, testimonials });
+    res.status(200).json({ 
+      success: true,
+      products: products || [],
+      categories: categories || [],
+      deliveries: deliveries || [],
+      reviews: reviews || [],
+      testimonials: testimonials || [],
+      timestamp: new Date().toISOString()
+    });
 
   } catch (err) {
-    console.error('API Error:', err);
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ 
+      success: false,
+      error: err.message,
+      timestamp: new Date().toISOString()
+    });
   }
 }

@@ -209,50 +209,72 @@ async function loadData() {
 }
 
 async function syncFromServer() {
+  let lastError;
+  
+  for (let attempt = 0; attempt < 3; attempt++) {
     try {
-        var controller = new AbortController();
-        var timeoutId = setTimeout(function() { controller.abort(); }, 8000);
-
-        var res = await fetch('/api/data', { signal: controller.signal });
-        clearTimeout(timeoutId);
-
-        if (!res.ok) throw new Error('API failed');
-
-        var data = await res.json();
-
-        if (data.products && data.products.length > 0) {
-            products = data.products;
-            products.forEach(function(p, i) { if (typeof p.sort_order !== 'number') p.sort_order = i; });
-            products.sort(function(a, b) { return a.sort_order - b.sort_order; });
-            try { localStorage.setItem('stackstore_products', JSON.stringify(products)); } catch(e) {}
-            renderProducts(); updateStats();
-        }
-        if (data.categories && data.categories.length > 0) {
-            categories = data.categories;
-            categories.forEach(function(c, i) { if (typeof c.sort_order !== 'number') c.sort_order = i; });
-            categories.sort(function(a, b) { return a.sort_order - b.sort_order; });
-            try { localStorage.setItem('stackstore_categories', JSON.stringify(categories)); } catch(e) {}
-            setupFilters();
-        }
-        if (data.deliveries) {
-            deliveries = data.deliveries;
-            try { localStorage.setItem('stackstore_deliveries', JSON.stringify(deliveries)); } catch(e) {}
-            renderDeliveries(); updateStats();
-        }
-        if (data.reviews) {
-            reviews = data.reviews;
-            try { localStorage.setItem('stackstore_reviews', JSON.stringify(reviews)); } catch(e) {}
-            renderReviews(); updateStats();
-        }
-        if (data.testimonials && data.testimonials.length > 0) {
-            testimonials = data.testimonials;
-            try { localStorage.setItem('stackstore_testimonials', JSON.stringify(testimonials)); } catch(e) {}
-            renderTestimonials();
-        }
-        console.log('✅ Loaded from Vercel API');
+      var controller = new AbortController();
+      var timeoutId = setTimeout(function() { controller.abort(); }, 15000);
+      
+      // ⛔ cache-busting + no-store
+      var res = await fetch('/api/data?t=' + Date.now(), { 
+        signal: controller.signal,
+        cache: 'no-store'
+      });
+      clearTimeout(timeoutId);
+      
+      if (!res.ok) throw new Error('API HTTP ' + res.status);
+      
+      var data = await res.json();
+      if (!data.success) throw new Error(data.error || 'API returned error');
+      
+      // ✅ Validate data
+      if (!Array.isArray(data.products)) throw new Error('Invalid products data');
+      
+      // 🔄 Update all arrays
+      products = data.products;
+      categories = data.categories && data.categories.length > 0 ? data.categories : defaultCategories;
+      deliveries = data.deliveries || [];
+      reviews = data.reviews || [];
+      testimonials = data.testimonials || [];
+      
+      // 📊 Sort
+      products.forEach(function(p, i) { if (typeof p.sort_order !== 'number') p.sort_order = i; });
+      products.sort(function(a, b) { return a.sort_order - b.sort_order; });
+      
+      categories.forEach(function(c, i) { if (typeof c.sort_order !== 'number') c.sort_order = i; });
+      categories.sort(function(a, b) { return a.sort_order - b.sort_order; });
+      
+      // 💾 Save to localStorage
+      try {
+        localStorage.setItem('stackstore_products', JSON.stringify(products));
+        localStorage.setItem('stackstore_categories', JSON.stringify(categories));
+        localStorage.setItem('stackstore_deliveries', JSON.stringify(deliveries));
+        localStorage.setItem('stackstore_reviews', JSON.stringify(reviews));
+        localStorage.setItem('stackstore_testimonials', JSON.stringify(testimonials));
+      } catch(e) {}
+      
+      // 🎨 Render everything
+      renderProducts(); 
+      setupFilters();
+      renderDeliveries(); 
+      renderReviews(); 
+      renderTestimonials();
+      updateStats();
+      
+      console.log('✅ Loaded from Vercel API at', data.timestamp);
+      return; // نجح، اخرج
+      
     } catch (e) {
-        console.warn('⏱️ Vercel API failed:', e.message);
+      lastError = e;
+      console.warn('⏱️ Attempt ' + (attempt + 1) + ' failed:', e.message);
+      if (attempt < 2) await new Promise(function(r) { setTimeout(r, 1200); });
     }
+  }
+  
+  // ❌ كل المحاولات فشلت
+  console.error('⏱️ All API attempts failed:', lastError.message);
+  showToast('<i class="fas fa-triangle-exclamation"></i> تعذر الاتصال بالسيرفر، جاري عرض البيانات المحلية', 'error');
 }
 
 async function waitForSupabase() {
