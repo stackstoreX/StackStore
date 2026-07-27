@@ -160,121 +160,99 @@ function initSupabase() {
 async function loadData() {
     isLoading = true;
     renderSkeletons();
-    if (!supabaseClient) await waitForSupabase();
 
-    // ===== PRODUCTS =====
-    var hasSupabaseProducts = false;
-    if (supabaseClient) {
+    // 🚀 اعرض الكاش المحلي فوراً
+    var cachedProducts = localStorage.getItem('stackstore_products');
+    var cachedCategories = localStorage.getItem('stackstore_categories');
+    var cachedDeliveries = localStorage.getItem('stackstore_deliveries');
+    var cachedReviews = localStorage.getItem('stackstore_reviews');
+    var cachedTestimonials = localStorage.getItem('stackstore_testimonials');
+
+    if (cachedProducts) {
         try {
-            var res = await supabaseClient.from('products').select('*');
-            if (res.data && res.data.length > 0) {
-                products = res.data;
-                try { localStorage.setItem('stackstore_products', JSON.stringify(products)); } catch(e) {}
-                hasSupabaseProducts = true;
-            }
-        } catch (e) {
-            console.log('Supabase products unavailable:', e.message);
-        }
+            products = JSON.parse(cachedProducts);
+            products.forEach(function(p, i) { if (typeof p.sort_order !== 'number') p.sort_order = i; });
+            products.sort(function(a, b) { return a.sort_order - b.sort_order; });
+            renderProducts(); updateStats();
+        } catch(e) {}
     }
-    
-    if (!hasSupabaseProducts) {
-        var storedProducts = localStorage.getItem('stackstore_products');
-        if (storedProducts) {
-            products = JSON.parse(storedProducts);
-        } else {
-            products = sampleProducts;
-        }
-    }
-
-    // ===== CATEGORIES =====
-    var hasSupabaseCategories = false;
-    if (supabaseClient) {
+    if (cachedCategories) {
         try {
-            var catRes = await supabaseClient.from('categories').select('*');
-            if (catRes.data && catRes.data.length > 0) {
-                categories = catRes.data;
-                try { localStorage.setItem('stackstore_categories', JSON.stringify(categories)); } catch(e) {}
-                hasSupabaseCategories = true;
-            }
-        } catch (e) {
-            console.log('Supabase categories unavailable:', e.message);
-        }
+            categories = JSON.parse(cachedCategories);
+            categories.forEach(function(c, i) { if (typeof c.sort_order !== 'number') c.sort_order = i; });
+            categories.sort(function(a, b) { return a.sort_order - b.sort_order; });
+            setupFilters();
+        } catch(e) {}
     }
-    
-    if (!hasSupabaseCategories) {
-        var storedCategories = localStorage.getItem('stackstore_categories');
-        if (storedCategories) {
-            categories = JSON.parse(storedCategories);
-        } else {
-            categories = defaultCategories;
-        }
-    }
-
-    // ===== DELIVERIES =====
-    if (supabaseClient) {
+    if (cachedDeliveries) {
         try {
-            var delRes = await supabaseClient.from('deliveries').select('*').order('created_at', { ascending: false });
-            if (delRes.data && delRes.data.length > 0) {
-                deliveries = delRes.data;
-                try { localStorage.setItem('stackstore_deliveries', JSON.stringify(deliveries)); } catch(e) {}
-            } else {
-                deliveries = JSON.parse(localStorage.getItem('stackstore_deliveries')) || [];
-            }
-        } catch (e) {
-            deliveries = JSON.parse(localStorage.getItem('stackstore_deliveries')) || [];
-        }
-    } else {
-        deliveries = JSON.parse(localStorage.getItem('stackstore_deliveries')) || [];
+            deliveries = JSON.parse(cachedDeliveries);
+            renderDeliveries(); updateStats();
+        } catch(e) {}
     }
-
-    // ===== REVIEWS =====
-    if (supabaseClient) {
+    if (cachedReviews) {
         try {
-            var revRes = await supabaseClient.from('reviews').select('*').order('created_at', { ascending: false });
-            if (revRes.data && revRes.data.length > 0) {
-                reviews = revRes.data;
-                try { localStorage.setItem('stackstore_reviews', JSON.stringify(reviews)); } catch(e) {}
-            } else {
-                reviews = JSON.parse(localStorage.getItem('stackstore_reviews')) || [];
-            }
-        } catch (e) {
-            reviews = JSON.parse(localStorage.getItem('stackstore_reviews')) || [];
-        }
-    } else {
-        reviews = JSON.parse(localStorage.getItem('stackstore_reviews')) || [];
+            reviews = JSON.parse(cachedReviews);
+            renderReviews(); updateStats();
+        } catch(e) {}
     }
-
-    // ===== TESTIMONIALS =====
-    var hasSupabaseTestimonials = false;
-    if (supabaseClient) {
+    if (cachedTestimonials) {
         try {
-            var testRes = await supabaseClient.from('testimonials').select('*');
-            if (testRes.data && testRes.data.length > 0) {
-                testimonials = testRes.data;
-                try { localStorage.setItem('stackstore_testimonials', JSON.stringify(testimonials)); } catch(e) {}
-                hasSupabaseTestimonials = true;
-            }
-        } catch (e) {
-            console.log('Supabase testimonials unavailable:', e.message);
-        }
-    }
-    
-    if (!hasSupabaseTestimonials) {
-        var storedTestimonials = localStorage.getItem('stackstore_testimonials');
-        if (storedTestimonials) {
-            testimonials = JSON.parse(storedTestimonials);
-        } else {
-            testimonials = sampleTestimonials;
-        }
+            testimonials = JSON.parse(cachedTestimonials);
+            renderTestimonials();
+        } catch(e) {}
     }
 
-    renderTestimonials();
+    // 🔄 زامن من السيرفر
+    await syncFromServer();
     isLoading = false;
-    renderProducts();
-    renderDeliveries();
-    renderReviews();
-    updateStats();
-    setupFilters();
+}
+
+async function syncFromServer() {
+    try {
+        var controller = new AbortController();
+        var timeoutId = setTimeout(function() { controller.abort(); }, 8000);
+
+        var res = await fetch('/api/data', { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (!res.ok) throw new Error('API failed');
+
+        var data = await res.json();
+
+        if (data.products && data.products.length > 0) {
+            products = data.products;
+            products.forEach(function(p, i) { if (typeof p.sort_order !== 'number') p.sort_order = i; });
+            products.sort(function(a, b) { return a.sort_order - b.sort_order; });
+            try { localStorage.setItem('stackstore_products', JSON.stringify(products)); } catch(e) {}
+            renderProducts(); updateStats();
+        }
+        if (data.categories && data.categories.length > 0) {
+            categories = data.categories;
+            categories.forEach(function(c, i) { if (typeof c.sort_order !== 'number') c.sort_order = i; });
+            categories.sort(function(a, b) { return a.sort_order - b.sort_order; });
+            try { localStorage.setItem('stackstore_categories', JSON.stringify(categories)); } catch(e) {}
+            setupFilters();
+        }
+        if (data.deliveries) {
+            deliveries = data.deliveries;
+            try { localStorage.setItem('stackstore_deliveries', JSON.stringify(deliveries)); } catch(e) {}
+            renderDeliveries(); updateStats();
+        }
+        if (data.reviews) {
+            reviews = data.reviews;
+            try { localStorage.setItem('stackstore_reviews', JSON.stringify(reviews)); } catch(e) {}
+            renderReviews(); updateStats();
+        }
+        if (data.testimonials && data.testimonials.length > 0) {
+            testimonials = data.testimonials;
+            try { localStorage.setItem('stackstore_testimonials', JSON.stringify(testimonials)); } catch(e) {}
+            renderTestimonials();
+        }
+        console.log('✅ Loaded from Vercel API');
+    } catch (e) {
+        console.warn('⏱️ Vercel API failed:', e.message);
+    }
 }
 
 async function waitForSupabase() {
