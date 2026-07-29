@@ -2803,4 +2803,81 @@ function updateSortOrder(tbody, array, storageKey, skipFirst) {
     }
 }
 
+// ====== IMPORT FROM STACK STORE ======
+function importFromStackStore() {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                var data = JSON.parse(event.target.result);
+                var imported = 0;
+                
+                if (data.deliveries) {
+                    var oldDeliveries = JSON.parse(data.deliveries);
+                    var currentDeliveries = JSON.parse(localStorage.getItem('stackstore_deliveries') || '[]');
+                    oldDeliveries.forEach(function(d) {
+                        var exists = currentDeliveries.find(function(cd) { return cd.id === d.id; });
+                        if (!exists) {
+                            currentDeliveries.unshift(d);
+                            imported++;
+                        }
+                    });
+                    localStorage.setItem('stackstore_deliveries', JSON.stringify(currentDeliveries));
+                    deliveries = currentDeliveries;
+                }
+                
+                if (data.reviews) {
+                    var oldReviews = JSON.parse(data.reviews);
+                    var currentReviews = JSON.parse(localStorage.getItem('stackstore_review_images') || '[]');
+                    oldReviews.forEach(function(r) {
+                        var exists = currentReviews.find(function(cr) { return cr.id === r.id; });
+                        if (!exists) {
+                            currentReviews.unshift(r);
+                            imported++;
+                        }
+                    });
+                    localStorage.setItem('stackstore_review_images', JSON.stringify(currentReviews));
+                    reviewImages = currentReviews;
+                }
+                
+                renderDeliveries();
+                renderReviewImages();
+                updateStats();
+                showToast('✅ تم استيراد ' + imported + ' عنصر من Stack Store! ريفرش الصفحة.', 'success');
+            } catch(err) {
+                showToast('❌ ملف غير صالح!', 'error');
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+}
+
+// Auto-add import button in admin settings
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        if (isAdmin) {
+            var adminSection = document.getElementById('admin');
+            if (adminSection) {
+                var cards = adminSection.querySelectorAll('.card');
+                var settingsCard = cards[cards.length - 1];
+                if (settingsCard) {
+                    var importBtn = document.createElement('button');
+                    importBtn.className = 'btn btn-success';
+                    importBtn.style.cssText = 'width:100%;justify-content:center;margin-top:10px;';
+                    importBtn.innerHTML = '<span><i class="fas fa-file-import"></i></span><span>استيراد من Stack Store</span>';
+                    importBtn.onclick = importFromStackStore;
+                    var firstBtn = settingsCard.querySelector('button');
+                    if (firstBtn) firstBtn.parentNode.insertBefore(importBtn, firstBtn.nextSibling);
+                }
+            }
+        }
+    }, 2500);
+});
+
 // ====== END OF APP.JS ======
