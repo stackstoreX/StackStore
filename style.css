@@ -4024,3 +4024,44 @@ body {
     transform: none !important;
     pointer-events: none;
 }
+
+/* ====== DRAG & DROP SORTING ====== */
+.sortable-row {
+    transition: all 0.2s ease;
+    cursor: grab;
+}
+
+.sortable-row:active {
+    cursor: grabbing;
+}
+
+.sortable-row.dragging {
+    opacity: 0.5;
+    background: var(--primary) !important;
+    color: white;
+}
+
+.drag-handle {
+    user-select: none;
+    -webkit-user-select: none;
+    transition: color 0.2s ease;
+}
+
+.sortable-row:hover .drag-handle {
+    color: var(--primary);
+}
+
+.sortable-row:hover {
+    background: rgba(99,102,241,0.05);
+}
+
+/* Mobile: show drag handle larger */
+@media (max-width: 768px) {
+    .drag-handle {
+        font-size: 1.2rem;
+        padding: 10px;
+    }
+    .sortable-row {
+        cursor: default;
+    }
+}

@@ -1457,11 +1457,13 @@ function renderAdminProducts() {
         return;
     }
 
-    var html = '<table class="admin-table"><thead><tr><th>صورة</th><th>الاسم</th><th>التصنيف</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody>';
-    products.forEach(function(p) {
+    var html = '<p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:10px;"><i class="fas fa-lightbulb"></i> اسحب الصفوف عشان ترتب المنتجات. الترتيب هيتطبق على الموقع فوراً.</p>';
+    html += '<table class="admin-table" id="adminProductsTable"><thead><tr><th style="width:30px;">⇅</th><th>صورة</th><th>الاسم</th><th>التصنيف</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody>';
+    products.forEach(function(p, idx) {
         var statusText = p.status === 'available' ? '<i class="fas fa-check-circle"></i>' : p.status === 'out_of_stock' ? '<i class="fas fa-circle-xmark"></i>' : '<i class="fas fa-clock"></i>';
-        html += '<tr>' +
-            '<td><img class="product-thumb" src="' + (p.image || PLACEHOLDER_IMG) + '" alt="" ></td>' +
+        html += '<tr draggable="true" data-id="' + p.id + '" data-index="' + idx + '" class="sortable-row">' +
+            '<td class="drag-handle" style="cursor:grab;color:var(--text-muted);text-align:center;"><i class="fas fa-grip-lines"></i></td>' +
+            '<td><img class="product-thumb" src="' + (p.image || PLACEHOLDER_IMG) + '" alt=""></td>' +
             '<td>' + escapeHtml(p.name) + '</td>' +
             '<td>' + getCategoryName(p.category) + '</td>' +
             '<td>' + statusText + '</td>' +
@@ -1472,6 +1474,7 @@ function renderAdminProducts() {
     });
     html += '</tbody></table>';
     container.innerHTML = html;
+    setupDragAndDrop('adminProductsTable', products, 'stackstore_products');
 }
 
 function getCategoryName(cat) {
@@ -1744,10 +1747,12 @@ function renderAdminCategories() {
         container.innerHTML = '<p style="color:var(--text-muted);text-align:center;">مفيش أقسام إضافية لسه</p>';
         return;
     }
-    var html = '<table class="admin-table"><thead><tr><th>الأيقونة</th><th>الاسم</th><th>المعرف</th><th>الإجراءات</th></tr></thead><tbody>';
-    categories.forEach(function(cat) {
+    var html = '<p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:10px;"><i class="fas fa-lightbulb"></i> اسحب الصفوف عشان ترتب الأقسام. "الكل" ثابت في الأول.</p>';
+    html += '<table class="admin-table" id="adminCategoriesTable"><thead><tr><th style="width:30px;">⇅</th><th>الأيقونة</th><th>الاسم</th><th>المعرف</th><th>الإجراءات</th></tr></thead><tbody>';
+    categories.forEach(function(cat, idx) {
         if (cat.id === 'all') return;
-        html += '<tr>' +
+        html += '<tr draggable="true" data-id="' + cat.id + '" data-index="' + idx + '" class="sortable-row">' +
+            '<td class="drag-handle" style="cursor:grab;color:var(--text-muted);text-align:center;"><i class="fas fa-grip-lines"></i></td>' +
             '<td style="font-size:1.4rem;text-align:center;">' + (cat.icon || '—') + '</td>' +
             '<td style="font-weight:700;">' + escapeHtml(cat.name) + '</td>' +
             '<td><code style="background:var(--bg);padding:4px 10px;border-radius:6px;font-size:0.8rem;color:var(--text-muted);border:1px solid var(--border);">' + cat.id + '</code></td>' +
@@ -1758,6 +1763,7 @@ function renderAdminCategories() {
     });
     html += '</tbody></table>';
     container.innerHTML = html;
+    setupDragAndDrop('adminCategoriesTable', categories, 'stackstore_categories', true);
 }
 
 async function openCategoryModal(catId) {
@@ -2627,5 +2633,100 @@ setInterval(function() {
 
 // Version check
 console.log('📦 Tamm Store v2.0 - All fixes applied');
+
+/* ====== DRAG & DROP SORTING ====== */
+function setupDragAndDrop(tableId, array, storageKey, skipFirst) {
+    var table = document.getElementById(tableId);
+    if (!table) return;
+    var tbody = table.querySelector('tbody');
+    if (!tbody) return;
+
+    var draggedRow = null;
+    var rows = tbody.querySelectorAll('tr');
+
+    rows.forEach(function(row) {
+        row.addEventListener('dragstart', function(e) {
+            draggedRow = this;
+            this.style.opacity = '0.5';
+            e.dataTransfer.effectAllowed = 'move';
+        });
+
+        row.addEventListener('dragend', function() {
+            this.style.opacity = '';
+            draggedRow = null;
+            updateSortOrder(tbody, array, storageKey, skipFirst);
+        });
+
+        row.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            if (this === draggedRow) return;
+            var rect = this.getBoundingClientRect();
+            var midY = rect.top + rect.height / 2;
+            if (e.clientY < midY) {
+                tbody.insertBefore(draggedRow, this);
+            } else {
+                tbody.insertBefore(draggedRow, this.nextSibling);
+            }
+        });
+    });
+}
+
+function updateSortOrder(tbody, array, storageKey, skipFirst) {
+    var rows = tbody.querySelectorAll('tr');
+    var offset = skipFirst ? 1 : 0;
+    var newOrder = [];
+
+    rows.forEach(function(row, index) {
+        var id = row.getAttribute('data-id');
+        var item = array.find(function(x) {
+            return String(x.id) === String(id);
+        });
+        if (item) {
+            item.sort_order = index + offset;
+            newOrder.push(item);
+        }
+    });
+
+    // Merge with items not in table (like "all" category)
+    array.forEach(function(item) {
+        var exists = newOrder.find(function(x) { return String(x.id) === String(item.id); });
+        if (!exists) newOrder.push(item);
+    });
+
+    // Sort by sort_order
+    newOrder.sort(function(a, b) { return a.sort_order - b.sort_order; });
+
+    // Update the original array
+    if (storageKey === 'stackstore_products') {
+        products = newOrder;
+    } else if (storageKey === 'stackstore_categories') {
+        categories = newOrder;
+    }
+
+    // Save to localStorage
+    try {
+        localStorage.setItem(storageKey, JSON.stringify(newOrder));
+    } catch(e) {}
+
+    // Sync to Supabase
+    if (supabaseClient && !window._supabaseTablesMissing) {
+        var tableName = storageKey === 'stackstore_products' ? 'products' : 'categories';
+        newOrder.forEach(function(item) {
+            supabaseClient.from(tableName).update({ sort_order: item.sort_order }).eq('id', item.id).then(function(r) {
+                if (r.error) console.warn('Sort sync failed for', item.id);
+            });
+        });
+    }
+
+    showToast('<i class="fas fa-check-circle"></i> تم تحديث الترتيب!', 'success');
+
+    // Re-render affected sections
+    if (storageKey === 'stackstore_products') {
+        renderProducts();
+    } else if (storageKey === 'stackstore_categories') {
+        setupFilters();
+        renderProducts();
+    }
+}
 
 // ====== END OF APP.JS ======
