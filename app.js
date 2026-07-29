@@ -84,6 +84,38 @@ const defaultProducts = [
 ];
 
 // ====== INIT ======
+
+// ====== URL SLUG HELPER ======
+function slugify(text) {
+    if (!text) return '';
+    return text.toString().toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^\w\-]+/g, '')
+        .replace(/\-\-+/g, '-')
+        .replace(/^-+/, '')
+        .replace(/-+$/, '');
+}
+
+// ====== HASH ROUTER ======
+function handleHashRoute() {
+    var hash = location.hash;
+    if (hash.startsWith('#/product/')) {
+        var parts = hash.replace('#/product/', '').split('/');
+        var id = parseInt(parts[0]);
+        if (!isNaN(id)) {
+            var p = products.find(function(x) { return x.id === id; });
+            if (p) { showProductDetail(id); return; }
+        }
+    }
+    if (hash === '#/deliveries') { showSection('deliveries'); return; }
+    if (hash === '#/reviews') { showSection('reviews'); return; }
+    if (hash === '#/terms') { showSection('terms'); return; }
+    if (hash === '#/admin') { showSection('admin'); return; }
+    // default
+    showSection('products');
+}
+
+
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Tamm initializing...');
     isAdmin = localStorage.getItem(ADMIN_KEY) === 'true';
@@ -526,6 +558,8 @@ function setupEventListeners() {
         }
     });
 
+    window.addEventListener('hashchange', handleHashRoute);
+
     document.addEventListener('contextmenu', function(e) {
         if (e.target.tagName === 'IMG' || (e.target.closest && e.target.closest('img'))) {
             e.preventDefault();
@@ -858,14 +892,26 @@ function renderProducts() {
     var html = '<div class="products-grid">';
     filtered.forEach(function(p) {
         var bestPrice = p.prices && p.prices.length > 0 ? p.prices.reduce(function(prev, curr) {
-            var prevPrice = prev.shared_price || prev.price || 0;
-            var currPrice = curr.shared_price || curr.price || 0;
-            return prevPrice < currPrice ? prev : curr;
+            var prevShared = prev.shared_price || prev.price || Infinity;
+            var prevPrivate = prev.private_price || prev.price || Infinity;
+            var currShared = curr.shared_price || curr.price || Infinity;
+            var currPrivate = curr.private_price || curr.price || Infinity;
+            var prevMin = Math.min(prevShared, prevPrivate);
+            var currMin = Math.min(currShared, currPrivate);
+            return prevMin < currMin ? prev : curr;
         }) : null;
 
-        var displayPrice = bestPrice ? (bestPrice.shared_price || bestPrice.price || 0) : 0;
-        var displayOriginal = bestPrice ? (bestPrice.originalPrice || bestPrice.original_price || 0) : 0;
-        var discount = displayOriginal ? Math.round((1 - displayPrice / displayOriginal) * 100) : 0;
+        var displayPrice = 0;
+        var displayOriginal = 0;
+        var discount = 0;
+        if (bestPrice) {
+            var shared = bestPrice.shared_price || bestPrice.price || Infinity;
+            var priv = bestPrice.private_price || bestPrice.price || Infinity;
+            displayPrice = Math.min(shared, priv);
+            if (displayPrice === Infinity) displayPrice = 0;
+            displayOriginal = bestPrice.originalPrice || bestPrice.original_price || 0;
+            discount = displayOriginal && displayPrice ? Math.round((1 - displayPrice / displayOriginal) * 100) : 0;
+        }
         var imgSrc = p.detail_image || p.image || PLACEHOLDER_IMG;
 
         html += '<div class="product-card-wrapper">' +
@@ -892,8 +938,9 @@ function showProductDetail(productId) {
     if (!p) return;
     currentProduct = p;
 
+    var slug = slugify(p.name);
     if (window.history && window.history.pushState) {
-        history.pushState({ section: 'productDetail', productId: productId }, '', '#product/' + productId);
+        history.pushState({ section: 'productDetail', productId: productId }, '', '#/product/' + productId + '/' + slug);
     }
 
     var statusClass = p.status || 'available';
@@ -2408,6 +2455,9 @@ function showSection(sectionId) {
 
     if (sectionId === 'admin') {
         renderAdminSection();
+        if (window.history && window.history.pushState) {
+            history.pushState({ section: 'admin' }, '', '#/admin');
+        }
         return;
     }
 
@@ -2431,6 +2481,18 @@ function showSection(sectionId) {
         toggleMobileMenu();
     }
 
+    if (window.history && window.history.pushState) {
+        var hashMap = {
+            'products': '#/products',
+            'deliveries': '#/deliveries',
+            'reviews': '#/reviews',
+            'terms': '#/terms'
+        };
+        if (hashMap[sectionId]) {
+            history.pushState({ section: sectionId }, '', hashMap[sectionId]);
+        }
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -2438,6 +2500,10 @@ function goToTop() {
     var productsSection = document.getElementById('products');
     if (productsSection && !productsSection.classList.contains('active')) {
         showSection('products');
+    } else {
+        if (window.history && window.history.pushState) {
+            history.pushState({ section: 'products' }, '', '#/products');
+        }
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -2526,16 +2592,24 @@ function clearAllData() {
 
 /* ====== FIX: ENSURE SECTIONS SHOW ON FIRST LOAD ====== */
 (function() {
-    // Make sure products section is visible on first load
-    var productsSection = document.getElementById('products');
-    if (productsSection && !productsSection.classList.contains('active')) {
-        document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
-        productsSection.classList.add('active');
-    }
-    var tabProducts = document.getElementById('tabProducts');
-    if (tabProducts && !tabProducts.classList.contains('active')) {
-        document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
-        tabProducts.classList.add('active');
+    // Handle initial hash route
+    if (location.hash && location.hash !== '#/' && location.hash !== '') {
+        handleHashRoute();
+    } else {
+        // Make sure products section is visible on first load
+        var productsSection = document.getElementById('products');
+        if (productsSection && !productsSection.classList.contains('active')) {
+            document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+            productsSection.classList.add('active');
+        }
+        var tabProducts = document.getElementById('tabProducts');
+        if (tabProducts && !tabProducts.classList.contains('active')) {
+            document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
+            tabProducts.classList.add('active');
+        }
+        if (window.history && window.history.replaceState) {
+            history.replaceState({ section: 'products' }, '', '#/products');
+        }
     }
 })();
 
