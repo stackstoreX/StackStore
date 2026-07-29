@@ -329,13 +329,21 @@ async function backgroundSyncFromSupabase() {
 }
 
 async function syncToSupabase(table, record) {
-    if (!supabaseClient) return;
+    if (!supabaseClient) return null;
     try {
-        var result = await supabaseClient.from(table).insert([record]);
+        var cleanRecord = Object.assign({}, record);
+        delete cleanRecord.date;        // local-only formatted string, not in DB
+
+        var result = await supabaseClient.from(table).insert([cleanRecord]).select();
         if (result.error) throw result.error;
-        console.log('✅ Saved to Supabase:', table);
+        if (result.data && result.data[0]) {
+            console.log('✅ Saved to Supabase:', table, 'id:', result.data[0].id);
+            return result.data[0].id;
+        }
+        return null;
     } catch (err) {
-        console.warn('❌ Supabase save failed (kept locally):', err.message);
+        console.warn('❌ Supabase save failed:', err.message, '| Table:', table, '| Code:', err.code);
+        return null;
     }
 }
 
@@ -382,7 +390,13 @@ function importData(input) {
             var data = JSON.parse(e.target.result);
             if (data.products) { products = data.products; localStorage.setItem('stackstore_products', JSON.stringify(products)); }
             if (data.categories) { categories = data.categories; localStorage.setItem('stackstore_categories', JSON.stringify(categories)); }
-            if (data.deliveries) { deliveries = data.deliveries; localStorage.setItem('stackstore_deliveries', JSON.stringify(deliveries)); }
+            if (data.deliveries && Array.isArray(data.deliveries)) { 
+                var existingIds = new Set(deliveries.map(function(d) { return d.id; }));
+                data.deliveries.forEach(function(d) { 
+                    if (!existingIds.has(d.id)) deliveries.unshift(d); 
+                });
+                localStorage.setItem('stackstore_deliveries', JSON.stringify(deliveries)); 
+            }
             if (data.reviews) { reviews = data.reviews; localStorage.setItem('stackstore_reviews', JSON.stringify(reviews)); }
             if (data.testimonials) { testimonials = data.testimonials; localStorage.setItem('stackstore_testimonials', JSON.stringify(testimonials)); }
             if (data.reviewImages) { reviewImages = data.reviewImages; localStorage.setItem('stackstore_review_images', JSON.stringify(reviewImages)); }
@@ -912,7 +926,7 @@ function renderProducts() {
             displayOriginal = bestPrice.originalPrice || bestPrice.original_price || 0;
             discount = displayOriginal && displayPrice ? Math.round((1 - displayPrice / displayOriginal) * 100) : 0;
         }
-        var imgSrc = p.detail_image || p.image || PLACEHOLDER_IMG;
+        var imgSrc = p.image || PLACEHOLDER_IMG;
 
         html += '<div class="product-card-wrapper">' +
             '<div class="product-card" onclick="showProductDetail(' + p.id + ')">' +
@@ -945,7 +959,7 @@ function showProductDetail(productId) {
 
     var statusClass = p.status || 'available';
     var statusText = statusClass === 'available' ? '<i class="fas fa-check-circle"></i> متاح' : statusClass === 'out_of_stock' ? '<i class="fas fa-circle-xmark"></i> نفذت الكمية' : '<i class="fas fa-clock"></i> قريباً';
-    var imgSrc = p.detail_image || p.image || PLACEHOLDER_IMG;
+    var imgSrc = p.image || PLACEHOLDER_IMG;
 
     // Build durations horizontal selector
     var durationsHtml = '';
@@ -1587,18 +1601,27 @@ async function addDelivery() {
             try {
                 var paymentUrl = await uploadToSupabaseStorage(paymentCompressed.file, 'payments');
                 var deliveryUrl = await uploadToSupabaseStorage(deliveryCompressed.file, 'deliveries');
-                var result = await supabaseClient.from('deliveries').insert([{
-                    payment_image: paymentUrl, delivery_image: deliveryUrl, notes: newDelivery.notes,
-                    delivery_date: newDelivery.delivery_date, created_at: newDelivery.created_at
-                }]).select();
 
-                if (!result.error && result.data) {
-                    newDelivery.id = result.data[0].id;
+                var record = {
+                    id: newDelivery.id,
+                    payment_image: paymentUrl,
+                    delivery_image: deliveryUrl,
+                    notes: newDelivery.notes,
+                    delivery_date: newDelivery.delivery_date,
+                    created_at: newDelivery.created_at
+                };
+
+                var remoteId = await syncToSupabase('deliveries', record);
+                if (remoteId) {
+                    newDelivery.id = remoteId;
                     newDelivery.payment_image = paymentUrl;
                     newDelivery.delivery_image = deliveryUrl;
                     localStorage.setItem('stackstore_deliveries', JSON.stringify(deliveries));
+                    console.log('✅ Delivery synced to Supabase with id:', remoteId);
                 }
-            } catch (supaErr) { console.warn('⚠️ Supabase upload failed:', supaErr.message); }
+            } catch (supaErr) { 
+                console.warn('⚠️ Supabase upload failed:', supaErr.message); 
+            }
         }
 
         if (notes) notes.value = '';
@@ -1637,7 +1660,10 @@ async function deleteDelivery(id) {
                 var deliveryPath = deliveryToDelete.delivery_image.split('/').pop();
                 await supabaseClient.storage.from('stackstore').remove(['deliveries/' + deliveryPath]);
             }
-            await supabaseClient.from('deliveries').delete().eq('id', id);
+            var result = await supabaseClient.from('deliveries').delete().eq('id', id);
+            if (result.error && deliveryToDelete.created_at) {
+                await supabaseClient.from('deliveries').delete().eq('created_at', deliveryToDelete.created_at);
+            }
         } catch (err) { console.warn('Supabase cleanup failed:', err.message); }
     }
 }
@@ -1745,7 +1771,11 @@ async function deleteReview(id) {
                 var imagePath = reviewToDelete.image.split('/').pop();
                 await supabaseClient.storage.from('stackstore').remove(['reviews/' + imagePath]);
             }
-            await supabaseClient.from('reviews').delete().eq('id', id);
+            // Try delete by id first, if that fails try by created_at as fallback
+            var result = await supabaseClient.from('reviews').delete().eq('id', id);
+            if (result.error && reviewToDelete.created_at) {
+                await supabaseClient.from('reviews').delete().eq('created_at', reviewToDelete.created_at);
+            }
         } catch (err) {
             console.log('Supabase review delete failed:', err);
         }
@@ -2106,14 +2136,13 @@ async function saveTestimonial() {
     renderAdminTestimonials();
 
     if (supabaseClient) {
-        try {
-            var result = await supabaseClient.from('testimonials').insert([testimonial]);
-            if (result.error) throw result.error;
+        var remoteId = await syncToSupabase('testimonials', testimonial);
+        if (remoteId) {
             closeTestimonialModal();
-            showToast('<i class="fas fa-check-circle"></i> تم حفظ صورة الرأي!', 'success');
-        } catch (e) {
+            showToast('<i class="fas fa-check-circle"></i> تم حفظ صورة الرأي في السحابة!', 'success');
+        } else {
             closeTestimonialModal();
-            showToast('<i class="fas fa-triangle-exclamation"></i> تم الحفظ محلياً فقط', 'warning');
+            showToast('<i class="fas fa-triangle-exclamation"></i> تم الحفظ محلياً فقط - Supabase غير متاح', 'warning');
         }
     } else {
         closeTestimonialModal();
