@@ -4,8 +4,8 @@
 const ADMIN_CODE = 'TAMM9';
 const ADMIN_KEY = 'stackstore_admin_device';
 
-const SUPABASE_URL = 'https://vakfdtxobojpvkiiscdx.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZha2ZkdHhvYm9qcHZraWlzY2R4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NjUyNDUsImV4cCI6MjEwMDI0MTI0NX0.NCbE_nETiFChKsFk4IYFPG3_dMslNRlVK0kN1ITrXXQ';
+const SUPABASE_URL = 'https://itmsrggznasayrtckxgt.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0bXNyZ2d6bmFzYXlydGNreGd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwODQxMzMsImV4cCI6MjEwMDY2MDEzM30.FWS3hIbcVhlln-iEKN-8HD0-y7ohwhIDoKZ27xrE4hs';
 const WHATSAPP_NUMBER = '201018484572';
 const PLACEHOLDER_IMG = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300" fill="%231e293b"%3E%3Crect width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%2364748b" font-family="Cairo" font-size="20"%3Eلا توجد صورة%3C/text%3E%3C/svg%3E';
 
@@ -45,9 +45,9 @@ const defaultProducts = [
         category: 'streaming',
         status: 'available',
         prices: [
-            { duration: 'شهر', price: 45, originalPrice: 70 },
-            { duration: '3 شهور', price: 120, originalPrice: 210 },
-            { duration: '6 شهور', price: 220, originalPrice: 420 }
+            { duration: 'شهر', shared_price: 45, private_price: 70, originalPrice: 90 },
+            { duration: '3 شهور', shared_price: 120, private_price: 210, originalPrice: 270 },
+            { duration: '6 شهور', shared_price: 220, private_price: 420, originalPrice: 540 }
         ],
         sort_order: 0,
         created_at: new Date().toISOString()
@@ -61,8 +61,8 @@ const defaultProducts = [
         category: 'music',
         status: 'available',
         prices: [
-            { duration: 'شهر', price: 25, originalPrice: 50 },
-            { duration: '3 شهور', price: 65, originalPrice: 150 }
+            { duration: 'شهر', shared_price: 25, private_price: 50, originalPrice: 75 },
+            { duration: '3 شهور', shared_price: 65, private_price: 150, originalPrice: 225 }
         ],
         sort_order: 1,
         created_at: new Date().toISOString()
@@ -76,7 +76,7 @@ const defaultProducts = [
         category: 'other',
         status: 'available',
         prices: [
-            { duration: 'شهر', price: 100, originalPrice: 200 }
+            { duration: 'شهر', shared_price: 100, private_price: 200, originalPrice: 250 }
         ],
         sort_order: 2,
         created_at: new Date().toISOString()
@@ -858,10 +858,14 @@ function renderProducts() {
     var html = '<div class="products-grid">';
     filtered.forEach(function(p) {
         var bestPrice = p.prices && p.prices.length > 0 ? p.prices.reduce(function(prev, curr) {
-            return prev.price < curr.price ? prev : curr;
+            var prevPrice = prev.shared_price || prev.price || 0;
+            var currPrice = curr.shared_price || curr.price || 0;
+            return prevPrice < currPrice ? prev : curr;
         }) : null;
 
-        var discount = bestPrice && bestPrice.originalPrice ? Math.round((1 - bestPrice.price / bestPrice.originalPrice) * 100) : 0;
+        var displayPrice = bestPrice ? (bestPrice.shared_price || bestPrice.price || 0) : 0;
+        var displayOriginal = bestPrice ? (bestPrice.originalPrice || bestPrice.original_price || 0) : 0;
+        var discount = displayOriginal ? Math.round((1 - displayPrice / displayOriginal) * 100) : 0;
         var imgSrc = p.detail_image || p.image || PLACEHOLDER_IMG;
 
         html += '<div class="product-card-wrapper">' +
@@ -873,8 +877,8 @@ function renderProducts() {
                 '<button class="card-action-btn" onclick="event.stopPropagation(); showProductDetail(' + p.id + ')">فعل اشتراكك</button>' +
                 '<div class="card-title-bottom">' + escapeHtml(p.name) + '</div>' +
                 '<div class="card-price-row">' +
-                    (bestPrice && bestPrice.originalPrice ? '<span class="original-price">' + bestPrice.originalPrice + ' ج.م</span>' : '') +
-                    (bestPrice ? '<span class="sale-price">' + bestPrice.price + ' ج.م</span>' : '') +
+                    (displayOriginal ? '<span class="original-price">' + displayOriginal + ' ج.م</span>' : '') +
+                    (bestPrice ? '<span class="sale-price">' + displayPrice + ' ج.م</span>' : '') +
                 '</div>' +
             '</div>' +
         '</div>';
@@ -896,19 +900,60 @@ function showProductDetail(productId) {
     var statusText = statusClass === 'available' ? '<i class="fas fa-check-circle"></i> متاح' : statusClass === 'out_of_stock' ? '<i class="fas fa-circle-xmark"></i> نفذت الكمية' : '<i class="fas fa-clock"></i> قريباً';
     var imgSrc = p.detail_image || p.image || PLACEHOLDER_IMG;
 
-    var pricesHtml = '';
+    // Build durations horizontal selector
+    var durationsHtml = '';
+    var priceDisplayHtml = '';
     if (p.prices && p.prices.length > 0) {
-        pricesHtml = '<table class="prices-table"><thead><tr><th>المدة</th><th>السعر</th><th>السعر قبل</th><th>الخصم</th></tr></thead><tbody>';
-        p.prices.forEach(function(pr) {
-            var discount = pr.originalPrice ? Math.round((1 - pr.price / pr.originalPrice) * 100) : 0;
-            pricesHtml += '<tr>' +
-                '<td>' + escapeHtml(pr.duration) + '</td>' +
-                '<td class="sale-price">' + pr.price + ' ج.م</td>' +
-                '<td class="original-price">' + (pr.originalPrice || '-') + ' ج.م</td>' +
-                '<td>' + (discount > 0 ? '<span class="discount-badge">-' + discount + '%</span>' : '-') + '</td>' +
-                '</tr>';
+        // Durations pills
+        var pills = '<div class="duration-pills">';
+        var pills = '<div class="duration-pills" id="durationPills">';
+        selectedDurationIdx = 0;
+        // نختار أول مدة متاحة للـ مشترك (الافتراضي)
+        for (var fi = 0; fi < p.prices.length; fi++) {
+            if (p.prices[fi].shared_price || p.prices[fi].price) {
+                selectedDurationIdx = fi;
+                break;
+            }
+        }
+        p.prices.forEach(function(pr, idx) {
+            var activeClass = idx === selectedDurationIdx ? ' active' : '';
+            pills += '<button class="duration-pill' + activeClass + '" data-idx="' + idx + '" onclick="selectDuration(' + idx + ')">' + escapeHtml(pr.duration) + '</button>';
         });
-        pricesHtml += '</tbody></table>';
+        pills += '</div>';
+
+        // Type toggle (Shared vs Private)
+        var toggle = '<div class="type-toggle">' +
+            '<button class="type-btn active" data-type="shared" onclick="selectType(' + "'" + 'shared' + "'" + ')">' +
+            '<span><i class="fas fa-users"></i></span>' +
+            '<span>مشترك</span>' +
+            '</button>' +
+            '<button class="type-btn" data-type="private" onclick="selectType(' + "'" + 'private' + "'" + ')">' +
+            '<span><i class="fas fa-user-shield"></i></span>' +
+            '<span>خاص</span>' +
+            '</button>' +
+            '</div>';
+
+        // Price display card
+        var firstPrice = p.prices[0];
+        var sharedPrice = firstPrice.shared_price || firstPrice.price || 0;
+        var privatePrice = firstPrice.private_price || firstPrice.price || 0;
+        var originalPrice = firstPrice.originalPrice || firstPrice.original_price || 0;
+        var discount = originalPrice ? Math.round((1 - sharedPrice / originalPrice) * 100) : 0;
+
+        priceDisplayHtml = '<div class="price-display-card" id="priceDisplayCard">' +
+            (discount > 0 ? '<div class="price-discount-badge">وفر ' + discount + '%</div>' : '') +
+            '<div class="price-main-row">' +
+            '<div class="price-type-label" id="priceTypeLabel"><i class="fas fa-users"></i> اشتراك مشترك</div>' +
+            '<div class="price-value-row">' +
+            '<span class="price-current" id="priceCurrent">' + sharedPrice + '</span>' +
+            '<span class="price-currency">ج.م</span>' +
+            '</div>' +
+            (originalPrice ? '<div class="price-original-row"><span class="price-original-line" id="priceOriginal">' + originalPrice + ' ج.م</span></div>' : '') +
+            '</div>' +
+            '<div class="price-duration-label" id="priceDurationLabel">' + escapeHtml(firstPrice.duration) + '</div>' +
+            '</div>';
+
+        durationsHtml = '<div class="durations-section">' + toggle + priceDisplayHtml + pills + '</div>';
     }
 
     var orderDisabled = p.status !== 'available' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '';
@@ -923,8 +968,8 @@ function showProductDetail(productId) {
         '<h2>' + escapeHtml(p.name) + ' <span class="status-badge ' + statusClass + '">' + statusText + '</span></h2>' +
         '<p class="detail-desc">' + escapeHtml(p.description) + '</p>' +
         '</div></div>' +
-        '<div class="card-title"><span class="icon"><i class="fas fa-coins"></i></span>الأسعار والمدد</div>' +
-        pricesHtml +
+        '<div class="card-title"><span class="icon"><i class="fas fa-coins"></i></span>اختر مدة الاشتراك</div>' +
+        durationsHtml +
         '<button class="order-btn" ' + orderDisabled + ' onclick="orderProduct(' + p.id + ')">' + orderText + '</button>' +
         '</div>';
 
@@ -938,11 +983,146 @@ function showProductDetail(productId) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// Globals for selected duration/type
+var selectedDurationIdx = 0;
+var selectedType = 'shared';
+
+function selectDuration(idx) {
+    if (!currentProduct || !currentProduct.prices[idx]) return;
+    var pr = currentProduct.prices[idx];
+    var hasPrice = selectedType === 'shared' ? (pr.shared_price || pr.price) : (pr.private_price || pr.price);
+    if (!hasPrice) return; // مينفعش تختار مدة مالهاش سعر للنوع الحالي
+    
+    selectedDurationIdx = idx;
+    document.querySelectorAll('.duration-pill').forEach(function(btn, i) {
+        if (i === idx) btn.classList.add('active');
+        else btn.classList.remove('active');
+    });
+    updatePriceDisplay();
+}
+
+function selectType(type) {
+    selectedType = type;
+    document.querySelectorAll('.type-btn').forEach(function(btn) {
+        if (btn.getAttribute('data-type') === type) btn.classList.add('active');
+        else btn.classList.remove('active');
+    });
+    // لو المدة الحالية مالهاش سعر للنوع الجديد، نروح لأول مدة متاحة
+    if (currentProduct && currentProduct.prices[selectedDurationIdx]) {
+        var pr = currentProduct.prices[selectedDurationIdx];
+        var hasPrice = type === 'shared' ? (pr.shared_price || pr.price) : (pr.private_price || pr.price);
+        if (!hasPrice) {
+            for (var i = 0; i < currentProduct.prices.length; i++) {
+                var checkPr = currentProduct.prices[i];
+                var checkHas = type === 'shared' ? (checkPr.shared_price || checkPr.price) : (checkPr.private_price || checkPr.price);
+                if (checkHas) {
+                    selectedDurationIdx = i;
+                    document.querySelectorAll('.duration-pill').forEach(function(btn, bi) {
+                        if (bi === i) btn.classList.add('active');
+                        else btn.classList.remove('active');
+                    });
+                    break;
+                }
+            }
+        }
+    }
+    updatePriceDisplay();
+}
+
+function updatePriceDisplay() {
+    if (!currentProduct || !currentProduct.prices || !currentProduct.prices[selectedDurationIdx]) return;
+    var pr = currentProduct.prices[selectedDurationIdx];
+    var price = selectedType === 'shared' ? (pr.shared_price || pr.price || 0) : (pr.private_price || pr.price || 0);
+    var hasPrice = selectedType === 'shared' ? (pr.shared_price || pr.price) : (pr.private_price || pr.price);
+    var original = pr.originalPrice || pr.original_price || 0;
+    var discount = original && hasPrice ? Math.round((1 - price / original) * 100) : 0;
+
+    var priceCurrent = document.getElementById('priceCurrent');
+    var priceOriginal = document.getElementById('priceOriginal');
+    var priceTypeLabel = document.getElementById('priceTypeLabel');
+    var priceDurationLabel = document.getElementById('priceDurationLabel');
+    var priceDisplayCard = document.getElementById('priceDisplayCard');
+    var orderBtn = document.querySelector('#productDetail .order-btn');
+
+    if (!hasPrice) {
+        if (priceCurrent) {
+            priceCurrent.innerHTML = '<span style="font-size:1.4rem;color:var(--danger);">غير متوفر</span>';
+        }
+        if (priceOriginal) priceOriginal.style.display = 'none';
+        if (priceDurationLabel) priceDurationLabel.textContent = pr.duration;
+        if (orderBtn) {
+            orderBtn.disabled = true;
+            orderBtn.style.opacity = '0.5';
+            orderBtn.style.cursor = 'not-allowed';
+            orderBtn.innerHTML = '<i class="fas fa-ban"></i> غير متوفر لهذه المدة';
+        }
+    } else {
+        if (priceCurrent) {
+            priceCurrent.innerHTML = price;
+            priceCurrent.style.fontSize = '';
+        }
+        if (priceOriginal) {
+            priceOriginal.style.display = '';
+            priceOriginal.textContent = original + ' ج.م';
+        }
+        if (priceDurationLabel) priceDurationLabel.textContent = pr.duration;
+        if (orderBtn && currentProduct.status === 'available') {
+            orderBtn.disabled = false;
+            orderBtn.style.opacity = '';
+            orderBtn.style.cursor = '';
+            orderBtn.innerHTML = '<i class="fas fa-cart-shopping"></i> اطلب الآن عبر واتساب';
+        }
+    }
+
+    if (priceTypeLabel) {
+        if (selectedType === 'shared') {
+            priceTypeLabel.innerHTML = '<i class="fas fa-users"></i> اشتراك مشترك';
+        } else {
+            priceTypeLabel.innerHTML = '<i class="fas fa-user-shield"></i> اشتراك خاص';
+        }
+    }
+
+    // Update pills availability (شيل علامة غير المتاح من المدد التانية)
+    document.querySelectorAll('.duration-pill').forEach(function(btn) {
+        var idx = parseInt(btn.getAttribute('data-idx'));
+        var pData = currentProduct.prices[idx];
+        var btnHasPrice = selectedType === 'shared' ? (pData.shared_price || pData.price) : (pData.private_price || pData.price);
+        if (!btnHasPrice) {
+            btn.classList.add('unavailable');
+        } else {
+            btn.classList.remove('unavailable');
+        }
+    });
+
+    // Update discount badge
+    if (priceDisplayCard) {
+        var existingBadge = priceDisplayCard.querySelector('.price-discount-badge');
+        if (existingBadge) existingBadge.remove();
+        if (discount > 0 && hasPrice) {
+            var badge = document.createElement('div');
+            badge.className = 'price-discount-badge';
+            badge.textContent = 'وفر ' + discount + '%';
+            priceDisplayCard.insertBefore(badge, priceDisplayCard.firstChild);
+        }
+    }
+}
+
 function orderProduct(productId) {
     var p = products.find(function(x) { return x.id === productId; });
     if (!p || p.status !== 'available') return;
-    var minPrice = p.prices && p.prices.length > 0 ? Math.min.apply(null, p.prices.map(function(x) { return x.price; })) : 0;
-    var msg = 'مرحباً Stack Store!%0A%0Aأنا مهتم بشراء: ' + encodeURIComponent(p.name) + '%0Aالسعر يبدأ من: ' + minPrice + ' ج.م%0A%0Aأرجو التواصل معي للتفاصيل.';
+
+    var selectedPrice = p.prices && p.prices[selectedDurationIdx] ? p.prices[selectedDurationIdx] : null;
+    if (!selectedPrice) return;
+
+    var price = selectedType === 'shared' ? (selectedPrice.shared_price || selectedPrice.price || 0) : (selectedPrice.private_price || selectedPrice.price || 0);
+    var duration = selectedPrice.duration || '';
+    var typeLabel = selectedType === 'shared' ? 'مشترك' : 'خاص';
+
+    var msg = 'مرحباً Tamm Store!%0A%0Aأنا مهتم بشراء: ' + encodeURIComponent(p.name) +
+        '%0Aالمدة: ' + encodeURIComponent(duration) +
+        '%0Aالنوع: ' + encodeURIComponent(typeLabel) +
+        '%0Aالسعر: ' + price + ' ج.م' +
+        '%0A%0Aأرجو التواصل معي للتفاصيل.';
     window.open('https://wa.me/' + WHATSAPP_NUMBER + '?text=' + msg, '_blank');
 }
 
@@ -1049,7 +1229,7 @@ function openProductModal(productId) {
             pricesContainer.innerHTML = '';
             if (p.prices && p.prices.length > 0) {
                 p.prices.forEach(function(pr) {
-                    addPriceRow(pr.duration, pr.price, pr.originalPrice);
+                    addPriceRow(pr.duration, pr.shared_price, pr.private_price, pr.originalPrice);
                 });
             } else {
                 addPriceRow();
@@ -1121,13 +1301,14 @@ function closeProductModal() {
     editingProductId = null;
 }
 
-function addPriceRow(duration, price, originalPrice) {
+function addPriceRow(duration, sharedPrice, privatePrice, originalPrice) {
     var container = document.getElementById('pricesContainer');
     if (!container) return;
     var row = document.createElement('div');
     row.className = 'price-row';
     row.innerHTML = '<input type="text" class="price-duration" placeholder="المدة" value="' + (duration || '') + '">' +
-        '<input type="number" class="price-value" placeholder="السعر" value="' + (price || '') + '">' +
+        '<input type="number" class="price-shared" placeholder="سعر مشترك" value="' + (sharedPrice || '') + '">' +
+        '<input type="number" class="price-private" placeholder="سعر خاص" value="' + (privatePrice || '') + '">' +
         '<input type="number" class="price-original" placeholder="السعر قبل" value="' + (originalPrice || '') + '">' +
         '<button class="btn btn-danger btn-sm" onclick="removePriceRow(this)"><i class="fas fa-trash"></i></button>';
     container.appendChild(row);
@@ -1174,13 +1355,15 @@ async function saveProduct() {
     var prices = [];
     document.querySelectorAll('.price-row').forEach(function(row) {
         var duration = row.querySelector('.price-duration');
-        var price = row.querySelector('.price-value');
+        var shared = row.querySelector('.price-shared');
+        var privatePrice = row.querySelector('.price-private');
         var original = row.querySelector('.price-original');
-        if (duration && price && !isNaN(parseFloat(price.value))) {
+        if (duration && duration.value.trim()) {
             prices.push({
                 duration: duration.value.trim(),
-                price: parseFloat(price.value),
-                originalPrice: parseFloat(original ? original.value : 0) || null
+                shared_price: parseFloat(shared && shared.value ? shared.value : 0) || null,
+                private_price: parseFloat(privatePrice && privatePrice.value ? privatePrice.value : 0) || null,
+                originalPrice: parseFloat(original && original.value ? original.value : 0) || null
             });
         }
     });
