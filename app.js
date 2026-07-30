@@ -1,11 +1,12 @@
-// ====== TAMM STORE - APP.JS ======
-// Speed-First: localStorage = Primary, Supabase = Background Sync
+// ====== TAMM STORE - APP.JS (HYBRID VERSION) ======
+// Static products = Instant ⚡ | Supabase = Deliveries/Reviews/Testimonials only
 
-const ADMIN_CODE = 'TAMM9';
+const ADMIN_EMAIL = 'admin';
+const ADMIN_PASSWORD = 'TAMM9';
 const ADMIN_KEY = 'stackstore_admin_device';
 
-const SUPABASE_URL = 'https://itmsrggznasayrtckxgt.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0bXNyZ2d6bmFzYXlydGNreGd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwODQxMzMsImV4cCI6MjEwMDY2MDEzM30.FWS3hIbcVhlln-iEKN-8HD0-y7ohwhIDoKZ27xrE4hs';
+const SUPABASE_URL = 'https://rrtlnaltxjxqdqjgafmm.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJydGxuYWx0eGp4cWRxamdhZm1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MDgzMTIsImV4cCI6MjEwMDk4NDMxMn0.YzZIlL3XAWKX5d5hBsdJ_XztWh19-JFcy5qqn2upVg0';
 const WHATSAPP_NUMBER = '201018484572';
 const PLACEHOLDER_IMG = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300" fill="%231e293b"%3E%3Crect width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%2364748b" font-family="Cairo" font-size="20"%3Eلا توجد صورة%3C/text%3E%3C/svg%3E';
 
@@ -25,65 +26,124 @@ let publicSelectedRating = 0;
 let currentProduct = null;
 let editingProductId = null;
 
-// ====== DEFAULT DATA ======
-const defaultCategories = [
-    { id: 'all', name: 'الكل', icon: '📦', sort_order: 0 },
-    { id: 'streaming', name: 'بث (Streaming)', icon: '🎬', sort_order: 1 },
-    { id: 'music', name: 'موسيقى', icon: '🎵', sort_order: 2 },
-    { id: 'gaming', name: 'ألعاب', icon: '🎮', sort_order: 3 },
-    { id: 'vpn', name: 'VPN', icon: '🔒', sort_order: 4 },
-    { id: 'other', name: 'أخرى', icon: '📌', sort_order: 5 }
-];
+// ====== INIT PRODUCTS (INSTANT - NO WAITING) ======
+function mergeWithLocal(localArray, remoteArray, idField) {
+    idField = idField || 'id';
+    if (!Array.isArray(remoteArray) || remoteArray.length === 0) return localArray || [];
+    var result = (localArray || []).slice();
+    var existingIds = new Set(result.map(function(x) { return x[idField]; }));
+    remoteArray.forEach(function(item) {
+        if (item && item[idField] !== undefined && !existingIds.has(item[idField])) {
+            result.push(item);
+            existingIds.add(item[idField]);
+        }
+    });
+    result.sort(function(a, b) {
+        var dateA = a.created_at ? new Date(a.created_at) : new Date(0);
+        var dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+        return dateB - dateA;
+    });
+    return result;
+}
 
-const defaultProducts = [
-    {
-        id: 1,
-        name: 'Netflix Premium',
-        description: 'اشتراك Netflix بريميوم - جودة Ultra HD - يدعم 4 شاشات في نفس الوقت',
-        image: 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=400&h=300&fit=crop',
-        detail_image: 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=800&h=500&fit=crop',
-        category: 'streaming',
-        status: 'available',
-        prices: [
-            { duration: 'شهر', shared_price: 45, private_price: 70, originalPrice: 90 },
-            { duration: '3 شهور', shared_price: 120, private_price: 210, originalPrice: 270 },
-            { duration: '6 شهور', shared_price: 220, private_price: 420, originalPrice: 540 }
-        ],
-        sort_order: 0,
-        created_at: new Date().toISOString()
-    },
-    {
-        id: 2,
-        name: 'Spotify Premium',
-        description: 'Spotify بريميوم بدون إعلانات - جودة عالية - تحميل offline',
-        image: 'https://images.unsplash.com/photo-1614680376593-902f74cf0d41?w=400&h=300&fit=crop',
-        detail_image: 'https://images.unsplash.com/photo-1614680376593-902f74cf0d41?w=800&h=500&fit=crop',
-        category: 'music',
-        status: 'available',
-        prices: [
-            { duration: 'شهر', shared_price: 25, private_price: 50, originalPrice: 75 },
-            { duration: '3 شهور', shared_price: 65, private_price: 150, originalPrice: 225 }
-        ],
-        sort_order: 1,
-        created_at: new Date().toISOString()
-    },
-    {
-        id: 3,
-        name: 'ChatGPT Plus',
-        description: 'ChatGPT Plus - GPT-4 - DALL-E - أسرع استجابة',
-        image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=300&fit=crop',
-        detail_image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=500&fit=crop',
-        category: 'other',
-        status: 'available',
-        prices: [
-            { duration: 'شهر', shared_price: 100, private_price: 200, originalPrice: 250 }
-        ],
-        sort_order: 2,
-        created_at: new Date().toISOString()
+
+function showSkeleton(containerId) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '<div class="products-skeleton">' +
+        '<div class="skeleton-card"><div class="img skeleton"></div><div class="title skeleton"></div><div class="price skeleton"></div></div>' +
+        '<div class="skeleton-card"><div class="img skeleton"></div><div class="title skeleton"></div><div class="price skeleton"></div></div>' +
+        '<div class="skeleton-card"><div class="img skeleton"></div><div class="title skeleton"></div><div class="price skeleton"></div></div>' +
+        '</div>';
+}
+
+async function initProducts() {
+    var container = document.getElementById('productsGrid');
+    if (container) {
+        container.innerHTML = '<div class="products-skeleton">' +
+            '<div class="skeleton-card"><div class="img skeleton"></div><div class="title skeleton"></div><div class="price skeleton"></div></div>' +
+            '<div class="skeleton-card"><div class="img skeleton"></div><div class="title skeleton"></div><div class="price skeleton"></div></div>' +
+            '<div class="skeleton-card"><div class="img skeleton"></div><div class="title skeleton"></div><div class="price skeleton"></div></div>' +
+            '<div class="skeleton-card"><div class="img skeleton"></div><div class="title skeleton"></div><div class="price skeleton"></div></div>' +
+            '</div>';
     }
-];
 
-// ====== INIT ======
+    var loadedFromSupabase = false;
+
+    if (supabaseClient) {
+        try {
+            var { data: prodData, error: prodError } = await supabaseClient
+                .from('products').select('*').order('sort_order', { ascending: true });
+            if (prodError) {
+                console.error('❌ Supabase products error:', prodError);
+            } else {
+                // ⚡ CRITICAL FIX: Trust Supabase even if empty (user intentionally deleted defaults)
+                products = prodData || [];
+                // ⚡ STRIP BASE64 from Supabase data before saving to localStorage
+                var cleanProducts = products.map(function(p) {
+                    var c = Object.assign({}, p);
+                    if (c.image && typeof c.image === 'string' && c.image.startsWith('data:')) c.image = '';
+                    if (c.detail_image && typeof c.detail_image === 'string' && c.detail_image.startsWith('data:')) c.detail_image = '';
+                    return c;
+                });
+                try {
+                    localStorage.setItem('stackstore_products', JSON.stringify(cleanProducts));
+                } catch (e) {
+                    console.warn('⚠️ localStorage full, clearing old data...');
+                    localStorage.clear();
+                    localStorage.setItem('stackstore_products', JSON.stringify(cleanProducts));
+                }
+                loadedFromSupabase = true;
+                console.log('✅ Products from Supabase:', products.length);
+            }
+            var { data: catData, error: catError } = await supabaseClient
+                .from('categories').select('*').order('sort_order', { ascending: true });
+            if (catError) {
+                console.error('❌ Supabase categories error:', catError);
+            } else {
+                categories = catData || [];
+                if (!categories.find(function(c){ return c.id === 'all'; })) {
+                    categories.unshift({ id: 'all', name: 'الكل', icon: '📦', sort_order: 0 });
+                }
+                localStorage.setItem('stackstore_categories', JSON.stringify(categories));
+                console.log('✅ Categories from Supabase:', categories.length);
+            }
+        } catch (e) { console.warn('Supabase fetch failed:', e.message); }
+    }
+
+    if (!loadedFromSupabase) {
+        var cp = localStorage.getItem('stackstore_products');
+        if (cp) try { products = JSON.parse(cp); } catch(e){ products = []; }
+        var cc = localStorage.getItem('stackstore_categories');
+        if (cc) try { categories = JSON.parse(cc); } catch(e){ categories = []; }
+    }
+
+    if (!Array.isArray(products)) products = [];
+    if (!Array.isArray(categories) || categories.length === 0) {
+        categories = [{ id: 'all', name: 'الكل', icon: '📦', sort_order: 0 }];
+    }
+
+    products.forEach(function(p,i){ if(typeof p.sort_order !== 'number') p.sort_order = i; });
+    products.sort(function(a,b){ return a.sort_order - b.sort_order; });
+    categories.forEach(function(c,i){ if(typeof c.sort_order !== 'number') c.sort_order = i; });
+    categories.sort(function(a,b){ return a.sort_order - b.sort_order; });
+
+    renderProducts(); setupFilters(); updateStats();
+}
+
+// ====== SUPABASE DEBUG HELPER ======
+async function checkSupabaseWriteAccess() {
+    if (!supabaseClient) { showToast('❌ Supabase مش متصل', 'error'); return; }
+    try {
+        var test = await supabaseClient.from('products').insert([{ name: '__test__', category: 'other', status: 'available', prices: [], created_at: new Date().toISOString() }]).select();
+        if (test.error) throw test.error;
+        await supabaseClient.from('products').delete().eq('name', '__test__');
+        showToast('✅ Supabase شغال ومفتوح للكتابة!', 'success');
+    } catch (err) {
+        showToast('❌ مشكلة في الكتابة: ' + err.message, 'error');
+        console.error('RLS/Write error:', err);
+    }
+}
 
 // ====== URL SLUG HELPER ======
 function slugify(text) {
@@ -111,19 +171,28 @@ function handleHashRoute() {
     if (hash === '#/reviews') { showSection('reviews'); return; }
     if (hash === '#/terms') { showSection('terms'); return; }
     if (hash === '#/admin') { showSection('admin'); return; }
-    // default
     showSection('products');
 }
 
-
+// ====== DOM READY ======
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🚀 Tamm initializing...');
+    console.log('🚀 Tamm Hybrid initializing...');
     isAdmin = localStorage.getItem(ADMIN_KEY) === 'true';
     initSupabase();
     setupEventListeners();
     checkAdminStatus();
-    await loadData();
-    console.log('✅ Tamm ready!');
+
+    // ⚡ STEP 1: Products load from Supabase/localStorage
+    await initProducts();
+
+    // ⚡ Show skeleton for dynamic sections while loading
+    showSkeleton('deliveriesList');
+    showSkeleton('reviewsList');
+
+    // 🔄 STEP 2: Dynamic data loads in background
+    await loadDynamicData();
+
+    console.log('✅ Tamm Hybrid ready!');
 });
 
 function initSupabase() {
@@ -141,162 +210,109 @@ function initSupabase() {
     }
 }
 
-async function loadData() {
+// ====== LOAD DYNAMIC DATA ONLY (Deliveries, Reviews, Testimonials) ======
+async function loadDynamicData() {
     isLoading = true;
-    renderSkeletons();
-    var hasData = false;
+
     var tablesMissing = false;
 
-    // STEP 1: Try Supabase client
+    // Try Supabase for dynamic tables only
     if (supabaseClient) {
         try {
-            console.log('🔄 Fetching from Supabase via client...');
+            console.log('🔄 Fetching dynamic data from Supabase...');
 
-            var { data: prodData, error: prodError } = await supabaseClient
-                .from('products')
+            var { data: delData, error: delError } = await supabaseClient
+                .from('deliveries')
                 .select('*')
-                .order('sort_order', { ascending: true });
+                .order('created_at', { ascending: false });
 
-            if (prodError) {
-                if (prodError.code === 'PGRST205') {
-                    console.error('❌ Supabase tables MISSING! Need to run SQL setup.');
-                    tablesMissing = true;
-                } else {
-                    console.error('❌ Supabase products error:', prodError.code, prodError.message);
-                }
-            } else if (Array.isArray(prodData) && prodData.length > 0) {
-                products = prodData;
-                hasData = true;
-                console.log('✅ Loaded', products.length, 'products from Supabase');
+            if (delError) {
+                if (delError.code === 'PGRST205') tablesMissing = true;
+                else console.error('❌ deliveries error:', delError.message);
+            } else if (Array.isArray(delData) && delData.length > 0) {
+                deliveries = mergeWithLocal(deliveries, delData);
+                console.log('✅ Loaded', delData.length, 'new deliveries from Supabase. Total:', deliveries.length);
             }
 
-            if (!tablesMissing) {
-                var { data: catData, error: catError } = await supabaseClient
-                    .from('categories')
-                    .select('*')
-                    .order('sort_order', { ascending: true });
+            var { data: revData, error: revError } = await supabaseClient
+                .from('reviews')
+                .select('*')
+                .order('created_at', { ascending: false });
 
-                if (catError) console.error('❌ categories error:', catError.message);
-                else if (Array.isArray(catData) && catData.length > 0) categories = catData;
+            if (revError) console.error('❌ reviews error:', revError.message);
+            else if (Array.isArray(revData) && revData.length > 0) {
+                reviews = mergeWithLocal(reviews, revData);
+            }
 
-                var { data: delData, error: delError } = await supabaseClient
-                    .from('deliveries')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+            var { data: testData, error: testError } = await supabaseClient
+                .from('testimonials')
+                .select('*')
+                .order('created_at', { ascending: false });
 
-                if (delError) console.error('❌ deliveries error:', delError.message);
-                else if (Array.isArray(delData)) deliveries = delData;
-
-                var { data: revData, error: revError } = await supabaseClient
-                    .from('reviews')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
-                if (revError) console.error('❌ reviews error:', revError.message);
-                else if (Array.isArray(revData)) reviews = revData;
-
-                var { data: testData, error: testError } = await supabaseClient
-                    .from('testimonials')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
-                if (testError) console.error('❌ testimonials error:', testError.message);
-                else if (Array.isArray(testData)) testimonials = testData;
+            if (testError) console.error('❌ testimonials error:', testError.message);
+            else if (Array.isArray(testData) && testData.length > 0) {
+                testimonials = mergeWithLocal(testimonials, testData);
             }
 
         } catch (err) {
-            console.warn('⚠️ Supabase client fetch failed:', err.message);
+            console.warn('⚠️ Supabase dynamic fetch failed:', err.message);
         }
     }
 
     window._supabaseTablesMissing = tablesMissing;
 
-    // STEP 2: If no Supabase data, try localStorage
-    if (!hasData) {
-        console.log('📦 Trying localStorage...');
-        var cachedProducts = localStorage.getItem('stackstore_products');
-        var cachedCategories = localStorage.getItem('stackstore_categories');
-        var cachedDeliveries = localStorage.getItem('stackstore_deliveries');
-        var cachedReviews = localStorage.getItem('stackstore_reviews');
-        var cachedTestimonials = localStorage.getItem('stackstore_testimonials');
-        var cachedReviewImages = localStorage.getItem('stackstore_review_images');
+    // Fallback to localStorage for dynamic data
+    var cachedDeliveries = localStorage.getItem('stackstore_deliveries');
+    var cachedReviews = localStorage.getItem('stackstore_reviews');
+    var cachedTestimonials = localStorage.getItem('stackstore_testimonials');
+    var cachedReviewImages = localStorage.getItem('stackstore_review_images');
 
-        if (cachedProducts) { try { products = JSON.parse(cachedProducts); hasData = true; } catch(e) { products = []; } }
-        if (cachedCategories) { try { categories = JSON.parse(cachedCategories); } catch(e) { categories = []; } }
-        if (cachedDeliveries) { try { deliveries = JSON.parse(cachedDeliveries); } catch(e) { deliveries = []; } }
-        if (cachedReviews) { try { reviews = JSON.parse(cachedReviews); } catch(e) { reviews = []; } }
-        if (cachedTestimonials) { try { testimonials = JSON.parse(cachedTestimonials); } catch(e) { testimonials = []; } }
-        if (cachedReviewImages) { try { reviewImages = JSON.parse(cachedReviewImages); } catch(e) { reviewImages = []; } }
+    if (cachedDeliveries && deliveries.length === 0) {
+        try { deliveries = JSON.parse(cachedDeliveries); } catch(e) { deliveries = []; }
+    }
+    if (cachedReviews && reviews.length === 0) {
+        try { reviews = JSON.parse(cachedReviews); } catch(e) { reviews = []; }
+    }
+    if (cachedTestimonials && testimonials.length === 0) {
+        try { testimonials = JSON.parse(cachedTestimonials); } catch(e) { testimonials = []; }
+    }
+    if (cachedReviewImages) {
+        try { reviewImages = JSON.parse(cachedReviewImages); } catch(e) { reviewImages = []; }
     }
 
-    // STEP 3: If still no data, use defaults
-    if (!hasData && products.length === 0) {
-        console.log('📌 Using default data');
-        products = JSON.parse(JSON.stringify(defaultProducts));
-        categories = JSON.parse(JSON.stringify(defaultCategories));
-    }
-
-    // Save everything to localStorage for offline use
+    // Save dynamic data to localStorage for offline
     try {
-        localStorage.setItem('stackstore_products', JSON.stringify(products));
-        localStorage.setItem('stackstore_categories', JSON.stringify(categories));
         localStorage.setItem('stackstore_deliveries', JSON.stringify(deliveries));
         localStorage.setItem('stackstore_reviews', JSON.stringify(reviews));
         localStorage.setItem('stackstore_testimonials', JSON.stringify(testimonials));
         localStorage.setItem('stackstore_review_images', JSON.stringify(reviewImages));
     } catch(e) {}
 
-    products.forEach(function(p, i) { if (typeof p.sort_order !== 'number') p.sort_order = i; });
-    products.sort(function(a, b) { return a.sort_order - b.sort_order; });
-    categories.forEach(function(c, i) { if (typeof c.sort_order !== 'number') c.sort_order = i; });
-    categories.sort(function(a, b) { return a.sort_order - b.sort_order; });
-
     isLoading = false;
-    renderProducts();
-    setupFilters();
+
+    // Render dynamic sections
     renderDeliveries();
     renderReviews();
-    renderReviewImages();
     renderTestimonials();
     updateStats();
 }
 
 async function backgroundSyncFromSupabase() {
-    if (!supabaseClient) { showToast('❌ Supabase مش متاح', 'error'); return; }
+    if (!supabaseClient) { console.log('❌ Supabase مش متاح'); return; }
     if (window._supabaseTablesMissing) {
-        showToast('⚠️ جداول Supabase ناقصة! شغل SQL script الأول', 'warning');
+        console.log('⚠️ جداول Supabase ناقصة! شغل SQL script الأول');
         return;
     }
 
     syncInProgress = true;
-    showToast('🔄 جاري المزامنة مع السحابة...', 'info');
+    console.log('🔄 جاري المزامنة مع السحابة...');
 
     try {
-        var { data: prodData, error: prodError } = await supabaseClient
-            .from('products').select('*').order('sort_order', { ascending: true });
-        if (prodError) throw prodError;
-        if (Array.isArray(prodData) && prodData.length > 0) {
-            products = prodData;
-            products.forEach(function(p, i) { if (typeof p.sort_order !== 'number') p.sort_order = i; });
-            products.sort(function(a, b) { return a.sort_order - b.sort_order; });
-            localStorage.setItem('stackstore_products', JSON.stringify(products));
-            renderProducts(); updateStats();
-        }
-
-        var { data: catData, error: catError } = await supabaseClient
-            .from('categories').select('*').order('sort_order', { ascending: true });
-        if (catError) throw catError;
-        if (Array.isArray(catData) && catData.length > 0) {
-            categories = catData;
-            localStorage.setItem('stackstore_categories', JSON.stringify(categories));
-            setupFilters();
-        }
-
         var { data: delData, error: delError } = await supabaseClient
             .from('deliveries').select('*').order('created_at', { ascending: false });
         if (delError) throw delError;
-        if (Array.isArray(delData)) {
-            deliveries = delData;
+        if (Array.isArray(delData) && delData.length > 0) {
+            deliveries = mergeWithLocal(deliveries, delData);
             localStorage.setItem('stackstore_deliveries', JSON.stringify(deliveries));
             renderDeliveries(); updateStats();
         }
@@ -304,8 +320,8 @@ async function backgroundSyncFromSupabase() {
         var { data: revData, error: revError } = await supabaseClient
             .from('reviews').select('*').order('created_at', { ascending: false });
         if (revError) throw revError;
-        if (Array.isArray(revData)) {
-            reviews = revData;
+        if (Array.isArray(revData) && revData.length > 0) {
+            reviews = mergeWithLocal(reviews, revData);
             localStorage.setItem('stackstore_reviews', JSON.stringify(reviews));
             renderReviews(); updateStats();
         }
@@ -313,16 +329,16 @@ async function backgroundSyncFromSupabase() {
         var { data: testData, error: testError } = await supabaseClient
             .from('testimonials').select('*').order('created_at', { ascending: false });
         if (testError) throw testError;
-        if (Array.isArray(testData)) {
-            testimonials = testData;
+        if (Array.isArray(testData) && testData.length > 0) {
+            testimonials = mergeWithLocal(testimonials, testData);
             localStorage.setItem('stackstore_testimonials', JSON.stringify(testimonials));
             renderTestimonials();
         }
 
-        showToast('✅ تم المزامنة بنجاح!', 'success');
+        console.log('✅ تم المزامنة بنجاح!');
     } catch (err) {
         console.warn('⏱️ Background sync failed:', err.message);
-        showToast('❌ فشل المزامنة: ' + err.message, 'error');
+        console.log('❌ فشل المزامنة:', err.message);
     } finally {
         syncInProgress = false;
     }
@@ -332,7 +348,7 @@ async function syncToSupabase(table, record) {
     if (!supabaseClient) return null;
     try {
         var cleanRecord = Object.assign({}, record);
-        delete cleanRecord.date;        // local-only formatted string, not in DB
+        delete cleanRecord.date;
 
         var result = await supabaseClient.from(table).insert([cleanRecord]).select();
         if (result.error) throw result.error;
@@ -359,10 +375,10 @@ async function deleteFromSupabase(table, id) {
 }
 
 async function manualSyncFromCloud() {
-    if (!supabaseClient) { showToast('❌ Supabase مش متاح حالياً', 'error'); return; }
-    showToast('🔄 جاري المزامنة مع السحابة...', 'info');
+    if (!supabaseClient) { console.log('❌ Supabase مش متاح حالياً'); return; }
+    console.log('🔄 جاري المزامنة مع السحابة...');
     await backgroundSyncFromSupabase();
-    showToast('✅ تم المزامنة بنجاح!', 'success');
+    console.log('✅ تم المزامنة بنجاح!');
 }
 
 function exportData() {
@@ -381,42 +397,164 @@ function exportData() {
     showToast('✅ تم تحميل النسخة الاحتياطية!', 'success');
 }
 
-function importData(input) {
+// ⚡ دالة جديدة: تحميل صورة من URL ورفعها على Supabase الجديد
+async function transferImage(imageUrl, folder) {
+    if (!supabaseClient || !imageUrl) return null;
+    try {
+        // لو الصورة مش من Supabase، سيبها زي ما هي
+        if (!imageUrl.includes('supabase.co')) return imageUrl;
+        
+        console.log('🔄 جاري نقل صورة:', imageUrl.split('/').pop());
+        
+        // حمل الصورة من URL القديم
+        var response = await fetch(imageUrl);
+        if (!response.ok) throw new Error('فشل تحميل الصورة');
+        
+        var blob = await response.blob();
+        var ext = imageUrl.split('.').pop().split('?')[0] || 'jpg';
+        if (ext.length > 5 || !/^[a-zA-Z0-9]+$/.test(ext)) ext = 'jpg';
+        
+        var fileName = Date.now() + '_' + Math.random().toString(36).substring(2, 10) + '.' + ext;
+        var file = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
+        
+        // ارفع على Supabase الجديد (bucket: products)
+        var result = await supabaseClient.storage.from('products').upload(folder + '/' + fileName, file, {
+            cacheControl: '3600',
+            upsert: false,
+            contentType: file.type
+        });
+        
+        if (result.error) throw result.error;
+        
+        var urlResult = supabaseClient.storage.from('products').getPublicUrl(folder + '/' + fileName);
+        console.log('✅ تم نقل الصورة:', urlResult.data.publicUrl);
+        return urlResult.data.publicUrl;
+        
+    } catch (e) {
+        console.warn('⚠️ فشل نقل الصورة، هنستخدم القديمة:', e.message);
+        return imageUrl; // هنرجع URL القديم لو فشل
+    }
+}
+
+// ⚡ دالة الاستيراد المعدلة بالكامل
+async function importData(input) {
     var file = input.files[0];
     if (!file) return;
     var reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
         try {
             var data = JSON.parse(e.target.result);
-            if (data.products) { products = data.products; localStorage.setItem('stackstore_products', JSON.stringify(products)); }
-            if (data.categories) { categories = data.categories; localStorage.setItem('stackstore_categories', JSON.stringify(categories)); }
-            if (data.deliveries && Array.isArray(data.deliveries)) { 
-                var existingIds = new Set(deliveries.map(function(d) { return d.id; }));
-                data.deliveries.forEach(function(d) { 
-                    if (!existingIds.has(d.id)) deliveries.unshift(d); 
-                });
-                localStorage.setItem('stackstore_deliveries', JSON.stringify(deliveries)); 
+            var importedD = 0, importedR = 0;
+            var uploadedImages = 0;
+
+            // ====== DELIVERIES ======
+            if (data.deliveries && Array.isArray(data.deliveries) && data.deliveries.length > 0) {
+                console.log('📦 جاري استيراد ' + data.deliveries.length + ' تسليم...');
+                
+                for (var i = 0; i < data.deliveries.length; i++) {
+                    var d = data.deliveries[i];
+                    
+                    // تخطى لو موجود بالفعل
+                    var exists = deliveries.find(function(x) { 
+                        return x.id === d.id || (x.created_at && x.created_at === d.created_at); 
+                    });
+                    if (exists) {
+                        console.log('⏭️ تسليم #' + (i+1) + ' موجود بالفعل');
+                        continue;
+                    }
+
+                    showToast('⬆️ جاري نقل تسليم ' + (i+1) + '/' + data.deliveries.length + '...', 'info');
+
+                    // ⚡ انقل صورة الدفع
+                    if (d.payment_image) {
+                        var newPayment = await transferImage(d.payment_image, 'payments');
+                        if (newPayment !== d.payment_image) uploadedImages++;
+                        d.payment_image = newPayment;
+                    }
+                    
+                    // ⚡ انقل صورة التسليم
+                    if (d.delivery_image) {
+                        var newDelivery = await transferImage(d.delivery_image, 'deliveries');
+                        if (newDelivery !== d.delivery_image) uploadedImages++;
+                        d.delivery_image = newDelivery;
+                    }
+                    
+                    // ⚡ احفظ في Supabase الجديد
+                    if (supabaseClient) {
+                        var clean = Object.assign({}, d);
+                        delete clean.id;        // عشان Supabase يعمل id جديد
+                        delete clean.date;      // مش موجود في الجدول
+                        
+                        var res = await supabaseClient.from('deliveries').insert([clean]).select();
+                        if (!res.error && res.data && res.data[0]) {
+                            d.id = res.data[0].id;
+                            console.log('✅ تسليم #' + (i+1) + ' اتحفظ في Supabase');
+                        } else if (res.error) {
+                            console.warn('⚠️ فشل حفظ تسليم #' + (i+1) + ' في Supabase:', res.error.message);
+                        }
+                    }
+                    
+                    deliveries.unshift(d);
+                    importedD++;
+                }
+                
+                localStorage.setItem('stackstore_deliveries', JSON.stringify(deliveries));
             }
-            if (data.reviews) { reviews = data.reviews; localStorage.setItem('stackstore_reviews', JSON.stringify(reviews)); }
-            if (data.testimonials) { testimonials = data.testimonials; localStorage.setItem('stackstore_testimonials', JSON.stringify(testimonials)); }
-            if (data.reviewImages) { reviewImages = data.reviewImages; localStorage.setItem('stackstore_review_images', JSON.stringify(reviewImages)); }
-            renderProducts(); renderAdminProducts(); renderDeliveries(); renderReviews(); renderTestimonials(); renderAdminTestimonials(); updateStats(); setupFilters();
-            showToast('✅ تم استرجاع البيانات بنجاح!', 'success');
-        } catch (err) { showToast('❌ ملف غير صالح!', 'error'); }
+
+            // ====== REVIEWS (صور الآراء) ======
+            if (data.reviews && Array.isArray(data.reviews) && data.reviews.length > 0) {
+                console.log('⭐ جاري استيراد ' + data.reviews.length + ' صورة رأي...');
+                
+                for (var j = 0; j < data.reviews.length; j++) {
+                    var r = data.reviews[j];
+                    
+                    var existsR = reviewImages.find(function(x) { return x.id === r.id; });
+                    if (existsR) continue;
+
+                    if (r.image) {
+                        var newImg = await transferImage(r.image, 'reviews');
+                        if (newImg !== r.image) uploadedImages++;
+                        r.image = newImg;
+                    }
+
+                    if (supabaseClient) {
+                        var cleanR = Object.assign({}, r);
+                        delete cleanR.id;
+                        delete cleanR.date;
+                        
+                        var resR = await supabaseClient.from('reviews').insert([cleanR]).select();
+                        if (!resR.error && resR.data && resR.data[0]) {
+                            r.id = resR.data[0].id;
+                        }
+                    }
+
+                    reviewImages.unshift(r);
+                    importedR++;
+                }
+                
+                localStorage.setItem('stackstore_review_images', JSON.stringify(reviewImages));
+            }
+
+            // ⚡ رندر كل حاجة
+            renderDeliveries();
+            renderReviewImages();
+            updateStats();
+            
+            showToast(
+                '✅ تم الاستيراد! ' + importedD + ' تسليم و ' + importedR + ' صورة رأي. ' +
+                '(' + uploadedImages + ' صورة رُفعت على السيرفر الجديد)',
+                'success'
+            );
+            
+            console.log('🎉 انتهى الاستيراد:', importedD, 'تسليم |', importedR, 'رأي |', uploadedImages, 'صورة مرفوعة');
+            
+        } catch (err) { 
+            console.error('❌ خطأ في الاستيراد:', err);
+            showToast('❌ ملف غير صالح أو حصل خطأ!', 'error'); 
+        }
     };
     reader.readAsText(file);
     input.value = '';
-}
-
-function renderSkeletons() {
-    var container = document.getElementById('productsGrid');
-    if (!container) return;
-    container.innerHTML = '<div class="products-skeleton">' +
-        '<div class="skeleton-card"><div class="skeleton img"></div><div class="skeleton title"></div><div class="skeleton price"></div></div>' +
-        '<div class="skeleton-card"><div class="skeleton img"></div><div class="skeleton title"></div><div class="skeleton price"></div></div>' +
-        '<div class="skeleton-card"><div class="skeleton img"></div><div class="skeleton title"></div><div class="skeleton price"></div></div>' +
-        '<div class="skeleton-card"><div class="skeleton img"></div><div class="skeleton title"></div><div class="skeleton price"></div></div>' +
-        '</div>';
 }
 
 function setupEventListeners() {
@@ -508,11 +646,11 @@ function setupEventListeners() {
     if (btnSaveTestimonial) btnSaveTestimonial.addEventListener('click', saveTestimonial);
 
     var btnAdminLogin = document.getElementById('btnAdminLogin');
-    if (btnAdminLogin) btnAdminLogin.addEventListener('click', checkAdminCode);
+    if (btnAdminLogin) btnAdminLogin.addEventListener('click', loginAdmin);
 
-    var adminCodeInput = document.getElementById('adminCodeInput');
-    if (adminCodeInput) {
-        adminCodeInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') checkAdminCode(); });
+    var adminPasswordInput = document.getElementById('adminPassword');
+    if (adminPasswordInput) {
+        adminPasswordInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') loginAdmin(); });
     }
 
     var btnBackFromLogin = document.getElementById('btnBackFromLogin');
@@ -858,15 +996,6 @@ async function compressImage(file, maxWidth, quality) {
     });
 }
 
-async function uploadToSupabaseStorage(file, folder) {
-    if (!supabaseClient) return null;
-    var fileName = folder + '/' + Date.now() + '_' + Math.random().toString(36).substring(2, 10) + '.jpg';
-    var result = await supabaseClient.storage.from('stackstore').upload(fileName, file, { cacheControl: '3600', upsert: false });
-    if (result.error) throw result.error;
-    var urlResult = supabaseClient.storage.from('stackstore').getPublicUrl(fileName);
-    return urlResult.data.publicUrl;
-}
-
 function setupFilters() {
     var container = document.getElementById('filterTabsContainer');
     if (!container) return;
@@ -947,6 +1076,7 @@ function renderProducts() {
     container.innerHTML = html;
 }
 
+
 function showProductDetail(productId) {
     var p = products.find(function(x) { return x.id === productId; });
     if (!p) return;
@@ -961,57 +1091,83 @@ function showProductDetail(productId) {
     var statusText = statusClass === 'available' ? '<i class="fas fa-check-circle"></i> متاح' : statusClass === 'out_of_stock' ? '<i class="fas fa-circle-xmark"></i> نفذت الكمية' : '<i class="fas fa-clock"></i> قريباً';
     var imgSrc = p.image || PLACEHOLDER_IMG;
 
-    // Build durations horizontal selector
     var durationsHtml = '';
     var priceDisplayHtml = '';
+
+    // ⚡ AUTO-SELECT LOWEST AVAILABLE PRICE (shared OR private)
+    selectedDurationIdx = 0;
+    selectedType = 'shared';
+
     if (p.prices && p.prices.length > 0) {
-        // Durations pills
-        var pills = '<div class="duration-pills">';
-        var pills = '<div class="duration-pills" id="durationPills">';
-        selectedDurationIdx = 0;
-        // نختار أول مدة متاحة للـ مشترك (الافتراضي)
-        for (var fi = 0; fi < p.prices.length; fi++) {
-            if (p.prices[fi].shared_price || p.prices[fi].price) {
-                selectedDurationIdx = fi;
-                break;
+        var bestOption = null;
+        var bestPrice = Infinity;
+
+        // Search all durations and both types for lowest available price
+        p.prices.forEach(function(pr, idx) {
+            var shared = pr.shared_price || pr.price || 0;
+            var priv = pr.private_price || pr.price || 0;
+
+            if (shared > 0 && shared < bestPrice) {
+                bestPrice = shared;
+                bestOption = { idx: idx, type: 'shared', price: shared, duration: pr.duration };
             }
+            if (priv > 0 && priv < bestPrice) {
+                bestPrice = priv;
+                bestOption = { idx: idx, type: 'private', price: priv, duration: pr.duration };
+            }
+        });
+
+        // If no price found at all, fallback to first duration
+        if (!bestOption) {
+            bestOption = { idx: 0, type: 'shared', price: 0, duration: p.prices[0].duration };
         }
+
+        selectedDurationIdx = bestOption.idx;
+        selectedType = bestOption.type;
+
+        var pills = '<div class="duration-pills" id="durationPills">';
         p.prices.forEach(function(pr, idx) {
             var activeClass = idx === selectedDurationIdx ? ' active' : '';
             pills += '<button class="duration-pill' + activeClass + '" data-idx="' + idx + '" onclick="selectDuration(' + idx + ')">' + escapeHtml(pr.duration) + '</button>';
         });
         pills += '</div>';
 
-        // Type toggle (Shared vs Private)
+        var sharedActive = selectedType === 'shared' ? ' active' : '';
+        var privateActive = selectedType === 'private' ? ' active' : '';
+
         var toggle = '<div class="type-toggle">' +
-            '<button class="type-btn active" data-type="shared" onclick="selectType(' + "'" + 'shared' + "'" + ')">' +
+            '<button class="type-btn' + sharedActive + '" data-type="shared" onclick="selectType(' + "'" + 'shared' + "'" + ')">' +
             '<span><i class="fas fa-users"></i></span>' +
             '<span>مشترك</span>' +
             '</button>' +
-            '<button class="type-btn" data-type="private" onclick="selectType(' + "'" + 'private' + "'" + ')">' +
+            '<button class="type-btn' + privateActive + '" data-type="private" onclick="selectType(' + "'" + 'private' + "'" + ')">' +
             '<span><i class="fas fa-user-shield"></i></span>' +
             '<span>خاص</span>' +
             '</button>' +
             '</div>';
 
-        // Price display card
-        var firstPrice = p.prices[0];
-        var sharedPrice = firstPrice.shared_price || firstPrice.price || 0;
-        var privatePrice = firstPrice.private_price || firstPrice.price || 0;
-        var originalPrice = firstPrice.originalPrice || firstPrice.original_price || 0;
-        var discount = originalPrice ? Math.round((1 - sharedPrice / originalPrice) * 100) : 0;
+        var selectedPrice = p.prices[selectedDurationIdx];
+        var displayPrice = selectedType === 'shared' 
+            ? (selectedPrice.shared_price || selectedPrice.price || 0) 
+            : (selectedPrice.private_price || selectedPrice.price || 0);
+        var originalPrice = selectedPrice.originalPrice || selectedPrice.original_price || 0;
+        var discount = originalPrice && displayPrice > 0 ? Math.round((1 - displayPrice / originalPrice) * 100) : 0;
+
+        var typeLabel = selectedType === 'shared' 
+            ? '<i class="fas fa-users"></i> اشتراك مشترك' 
+            : '<i class="fas fa-user-shield"></i> اشتراك خاص';
 
         priceDisplayHtml = '<div class="price-display-card" id="priceDisplayCard">' +
             (discount > 0 ? '<div class="price-discount-badge">وفر ' + discount + '%</div>' : '') +
             '<div class="price-main-row">' +
-            '<div class="price-type-label" id="priceTypeLabel"><i class="fas fa-users"></i> اشتراك مشترك</div>' +
+            '<div class="price-type-label" id="priceTypeLabel">' + typeLabel + '</div>' +
             '<div class="price-value-row">' +
-            '<span class="price-current" id="priceCurrent">' + sharedPrice + '</span>' +
+            '<span class="price-current" id="priceCurrent">' + displayPrice + '</span>' +
             '<span class="price-currency">ج.م</span>' +
             '</div>' +
             (originalPrice ? '<div class="price-original-row"><span class="price-original-line" id="priceOriginal">' + originalPrice + ' ج.م</span></div>' : '') +
             '</div>' +
-            '<div class="price-duration-label" id="priceDurationLabel">' + escapeHtml(firstPrice.duration) + '</div>' +
+            '<div class="price-duration-label" id="priceDurationLabel">' + escapeHtml(selectedPrice.duration) + '</div>' +
             '</div>';
 
         durationsHtml = '<div class="durations-section">' + toggle + priceDisplayHtml + pills + '</div>';
@@ -1044,7 +1200,6 @@ function showProductDetail(productId) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Globals for selected duration/type
 var selectedDurationIdx = 0;
 var selectedType = 'shared';
 
@@ -1052,8 +1207,8 @@ function selectDuration(idx) {
     if (!currentProduct || !currentProduct.prices[idx]) return;
     var pr = currentProduct.prices[idx];
     var hasPrice = selectedType === 'shared' ? (pr.shared_price || pr.price) : (pr.private_price || pr.price);
-    if (!hasPrice) return; // مينفعش تختار مدة مالهاش سعر للنوع الحالي
-    
+    if (!hasPrice) return;
+
     selectedDurationIdx = idx;
     document.querySelectorAll('.duration-pill').forEach(function(btn, i) {
         if (i === idx) btn.classList.add('active');
@@ -1068,11 +1223,12 @@ function selectType(type) {
         if (btn.getAttribute('data-type') === type) btn.classList.add('active');
         else btn.classList.remove('active');
     });
-    // لو المدة الحالية مالهاش سعر للنوع الجديد، نروح لأول مدة متاحة
     if (currentProduct && currentProduct.prices[selectedDurationIdx]) {
         var pr = currentProduct.prices[selectedDurationIdx];
         var hasPrice = type === 'shared' ? (pr.shared_price || pr.price) : (pr.private_price || pr.price);
+        // ⚡ If current duration doesn't have this type, find first available duration for this type
         if (!hasPrice) {
+            var found = false;
             for (var i = 0; i < currentProduct.prices.length; i++) {
                 var checkPr = currentProduct.prices[i];
                 var checkHas = type === 'shared' ? (checkPr.shared_price || checkPr.price) : (checkPr.private_price || checkPr.price);
@@ -1082,8 +1238,13 @@ function selectType(type) {
                         if (bi === i) btn.classList.add('active');
                         else btn.classList.remove('active');
                     });
+                    found = true;
                     break;
                 }
+            }
+            // If no duration has this type at all, stay on current but show unavailable
+            if (!found) {
+                showToast('<i class="fas fa-circle-info"></i> هذا النوع غير متوفر في أي مدة', 'info');
             }
         }
     }
@@ -1096,7 +1257,7 @@ function updatePriceDisplay() {
     var price = selectedType === 'shared' ? (pr.shared_price || pr.price || 0) : (pr.private_price || pr.price || 0);
     var hasPrice = selectedType === 'shared' ? (pr.shared_price || pr.price) : (pr.private_price || pr.price);
     var original = pr.originalPrice || pr.original_price || 0;
-    var discount = original && hasPrice ? Math.round((1 - price / original) * 100) : 0;
+    var discount = original && hasPrice && price > 0 ? Math.round((1 - price / original) * 100) : 0;
 
     var priceCurrent = document.getElementById('priceCurrent');
     var priceOriginal = document.getElementById('priceOriginal');
@@ -1105,7 +1266,7 @@ function updatePriceDisplay() {
     var priceDisplayCard = document.getElementById('priceDisplayCard');
     var orderBtn = document.querySelector('#productDetail .order-btn');
 
-    if (!hasPrice) {
+    if (!hasPrice || price <= 0) {
         if (priceCurrent) {
             priceCurrent.innerHTML = '<span style="font-size:1.4rem;color:var(--danger);">غير متوفر</span>';
         }
@@ -1143,7 +1304,6 @@ function updatePriceDisplay() {
         }
     }
 
-    // Update pills availability (شيل علامة غير المتاح من المدد التانية)
     document.querySelectorAll('.duration-pill').forEach(function(btn) {
         var idx = parseInt(btn.getAttribute('data-idx'));
         var pData = currentProduct.prices[idx];
@@ -1155,7 +1315,6 @@ function updatePriceDisplay() {
         }
     });
 
-    // Update discount badge
     if (priceDisplayCard) {
         var existingBadge = priceDisplayCard.querySelector('.price-discount-badge');
         if (existingBadge) existingBadge.remove();
@@ -1176,6 +1335,13 @@ function orderProduct(productId) {
     if (!selectedPrice) return;
 
     var price = selectedType === 'shared' ? (selectedPrice.shared_price || selectedPrice.price || 0) : (selectedPrice.private_price || selectedPrice.price || 0);
+
+    // ⚡ CRITICAL FIX: Don't send WhatsApp if price is 0 or invalid
+    if (!price || price <= 0) {
+        showToast('<i class="fas fa-circle-xmark"></i> السعر غير متوفر لهذا النوع/المدة!', 'error');
+        return;
+    }
+
     var duration = selectedPrice.duration || '';
     var typeLabel = selectedType === 'shared' ? 'مشترك' : 'خاص';
 
@@ -1385,103 +1551,219 @@ function removePriceRow(btn) {
     }
 }
 
-async function saveProduct() {
-    var prodName = document.getElementById('prodName');
-    var prodDesc = document.getElementById('prodDesc');
-    var prodImageUrl = document.getElementById('prodImageUrl');
-    var prodCategory = document.getElementById('prodCategory');
-    var prodStatus = document.getElementById('prodStatus');
 
-    var name = prodName ? prodName.value.trim() : '';
-    var desc = prodDesc ? prodDesc.value.trim() : '';
-    var imageUrl = prodImageUrl ? prodImageUrl.value.trim() : '';
-    var category = prodCategory ? prodCategory.value : 'other';
-    var status = prodStatus ? prodStatus.value : 'available';
-
-    if (!name) { showToast('<i class="fas fa-circle-xmark"></i> أدخل اسم المنتج!', 'error'); return; }
-
-    var image = imageUrl;
-    var preview = document.getElementById('productImagePreview');
-    if (preview && preview.src && preview.classList.contains('show') && preview.src.startsWith('data:')) {
-        image = preview.src;
-    }
-
-    var detailImageUrl = document.getElementById('prodDetailImageUrl');
-    var detailImage = detailImageUrl ? detailImageUrl.value.trim() : '';
-    var detailPreview = document.getElementById('productDetailImagePreview');
-    if (detailPreview && detailPreview.src && detailPreview.classList.contains('show') && detailPreview.src.startsWith('data:')) {
-        detailImage = detailPreview.src;
-    }
-
-    var prices = [];
-    document.querySelectorAll('.price-row').forEach(function(row) {
-        var duration = row.querySelector('.price-duration');
-        var shared = row.querySelector('.price-shared');
-        var privatePrice = row.querySelector('.price-private');
-        var original = row.querySelector('.price-original');
-        if (duration && duration.value.trim()) {
-            prices.push({
-                duration: duration.value.trim(),
-                shared_price: parseFloat(shared && shared.value ? shared.value : 0) || null,
-                private_price: parseFloat(privatePrice && privatePrice.value ? privatePrice.value : 0) || null,
-                originalPrice: parseFloat(original && original.value ? original.value : 0) || null
-            });
-        }
+// ⚡ دالة مساعدة: تشيل Base64 من كل المنتجات
+function stripBase64FromProducts(arr) {
+    if (!Array.isArray(arr)) return [];
+    return arr.map(function(p) {
+        var copy = Object.assign({}, p);
+        if (copy.image && typeof copy.image === 'string' && copy.image.startsWith('data:')) copy.image = '';
+        if (copy.detail_image && typeof copy.detail_image === 'string' && copy.detail_image.startsWith('data:')) copy.detail_image = '';
+        return copy;
     });
+}
 
-    var productData = {
-        name: name,
-        description: desc,
-        image: image,
-        detail_image: detailImage,
-        category: category,
-        status: status,
-        prices: prices,
-        created_at: new Date().toISOString()
-    };
-
-    if (editingProductId) {
-        var idx = products.findIndex(function(p) { return p.id === editingProductId; });
-        if (idx !== -1) {
-            productData.id = editingProductId;
-            productData.created_at = products[idx].created_at;
-            productData.sort_order = products[idx].sort_order;
-            products[idx] = productData;
+// ⚡ دالة مساعدة: تحفظ في localStorage ولو فشل بتنضف القديم
+function safeSaveProducts() {
+    var clean = stripBase64FromProducts(products);
+    var json = JSON.stringify(clean);
+    try {
+        localStorage.setItem('stackstore_products', json);
+        return true;
+    } catch (e) {
+        console.warn('⚠️ localStorage full! Cleaning all old data...');
+        try {
+            localStorage.removeItem('stackstore_deliveries');
+            localStorage.removeItem('stackstore_reviews');
+            localStorage.removeItem('stackstore_testimonials');
+            localStorage.removeItem('stackstore_review_images');
+            localStorage.setItem('stackstore_products', json);
+            return true;
+        } catch (e2) {
+            console.error('❌ Still full, trying clear all...');
+            try {
+                localStorage.clear();
+                localStorage.setItem('stackstore_products', json);
+                return true;
+            } catch (e3) {
+                return false;
+            }
         }
-    } else {
-        productData.id = Date.now();
-        productData.sort_order = products.length;
-        products.unshift(productData);
     }
+}
+
+async function saveProduct() {
+    var btn = document.getElementById('btnSaveProduct');
+    var originalBtnHtml = btn ? btn.innerHTML : '';
 
     try {
-        localStorage.setItem('stackstore_products', JSON.stringify(products));
-    } catch (e) {
-        console.warn('localStorage full, skipping local save:', e);
-    }
-
-    renderProducts();
-    renderAdminProducts();
-    updateStats();
-
-    if (supabaseClient) {
-        try {
-            if (editingProductId) {
-                var result = await supabaseClient.from('products').update(productData).eq('id', editingProductId);
-                if (result.error) throw result.error;
-            } else {
-                var result2 = await supabaseClient.from('products').insert([productData]);
-                if (result2.error) throw result2.error;
-            }
-            closeProductModal();
-            showToast('<i class="fas fa-check-circle"></i> تم حفظ المنتج بنجاح!', 'success');
-        } catch (e) {
-            closeProductModal();
-            showToast('<i class="fas fa-triangle-exclamation"></i> تم الحفظ محلياً فقط - Supabase غير متاح', 'warning');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span><i class="fas fa-spinner fa-spin"></i></span><span>جاري الحفظ...</span>';
         }
-    } else {
+
+        var prodName = document.getElementById('prodName');
+        var prodDesc = document.getElementById('prodDesc');
+        var prodImageUrl = document.getElementById('prodImageUrl');
+        var prodCategory = document.getElementById('prodCategory');
+        var prodStatus = document.getElementById('prodStatus');
+
+        var name = prodName ? prodName.value.trim() : '';
+        var desc = prodDesc ? prodDesc.value.trim() : '';
+        var category = prodCategory ? prodCategory.value : 'other';
+        var status = prodStatus ? prodStatus.value : 'available';
+
+        if (!name) { showToast('<i class="fas fa-circle-xmark"></i> أدخل اسم المنتج!', 'error'); return; }
+
+        // ⚡ FIX: رفع الصورة على Supabase Storage لو فيه ملف (مش Base64)
+        var image = prodImageUrl ? prodImageUrl.value.trim() : '';
+        var imageFile = document.getElementById('productImageFile').files[0];
+
+        // ⚡ FIX 3: تأكد إن الـ client مهيأ بالكامل
+        if (imageFile && supabaseClient && window.supabase) {
+                try {
+                showToast('<i class="fas fa-cloud-arrow-up"></i> جاري رفع الصورة...', 'info');
+                var uploadedUrl = await uploadToSupabaseStorage(imageFile, 'products');
+                if (uploadedUrl) image = uploadedUrl;
+            } catch (e) {
+                console.warn('❌ فشل رفع الصورة:', e);
+                image = '';
+            }
+        } else if (imageFile && !supabaseClient) {
+            image = '';
+            showToast('<i class="fas fa-triangle-exclamation"></i> لا يوجد اتصال بالسحابة - الصورة لن تُحفظ', 'warning');
+        }
+
+        // ⚡ FIX: نفس الكلام لصورة التفاصيل
+        var detailImage = '';
+        var prodDetailImageUrl = document.getElementById('prodDetailImageUrl');
+        if (prodDetailImageUrl) detailImage = prodDetailImageUrl.value.trim();
+
+        var detailFile = document.getElementById('productDetailImageFile').files[0];
+        if (detailFile && supabaseClient) {
+            try {
+                var uploadedDetail = await uploadToSupabaseStorage(detailFile, 'products');
+                if (uploadedDetail) detailImage = uploadedDetail;
+            } catch (e) {
+                detailImage = '';
+            }
+        } else if (detailFile && !supabaseClient) {
+            detailImage = '';
+        }
+
+        var prices = [];
+        document.querySelectorAll('.price-row').forEach(function(row) {
+            var duration = row.querySelector('.price-duration');
+            var shared = row.querySelector('.price-shared');
+            var privatePrice = row.querySelector('.price-private');
+            var original = row.querySelector('.price-original');
+            if (duration && duration.value.trim()) {
+                prices.push({
+                    duration: duration.value.trim(),
+                    shared_price: parseFloat(shared && shared.value ? shared.value : 0) || null,
+                    private_price: parseFloat(privatePrice && privatePrice.value ? privatePrice.value : 0) || null,
+                    originalPrice: parseFloat(original && original.value ? original.value : 0) || null
+                });
+            }
+        });
+
+        var productData = {
+            name: name,
+            description: desc,
+            image: image,
+            detail_image: detailImage,
+            category: category,
+            status: status,
+            prices: prices,
+            created_at: new Date().toISOString()
+        };
+
+        var isNew = false;
+        var localId;
+
+        if (editingProductId) {
+            var idx = products.findIndex(function(p) { return p.id === editingProductId; });
+            if (idx !== -1) {
+                productData.id = editingProductId;
+                productData.created_at = products[idx].created_at;
+                productData.sort_order = products[idx].sort_order;
+                products[idx] = productData;
+                localId = editingProductId;
+            }
+        } else {
+            isNew = true;
+            localId = Date.now();
+            while (products.find(function(p) { return p.id === localId; })) {
+                localId = Date.now() + Math.floor(Math.random() * 1000);
+            }
+            productData.id = localId;
+            productData.sort_order = products.length;
+            products.unshift(productData);
+        }
+
+        // ⚡ FIX: اشيل Base64 من كل المنتجات قبل الحفظ
+        safeSaveProducts();
+
+        // ⚡ تحديث الواجهة فوراً واقفل الـ Modal
+        renderProducts();
+        renderAdminProducts();
+        updateStats();
         closeProductModal();
-        showToast('<i class="fas fa-check-circle"></i> تم الحفظ محلياً!', 'success');
+
+        // نضف النموذج
+        if (prodName) prodName.value = '';
+        if (prodDesc) prodDesc.value = '';
+        if (prodImageUrl) prodImageUrl.value = '';
+        if (prodDetailImageUrl) prodDetailImageUrl.value = '';
+        var pricesContainer = document.getElementById('pricesContainer');
+        if (pricesContainer) {
+            pricesContainer.innerHTML = '';
+            addPriceRow();
+        }
+        removeImage('productImageFile', 'productImagePreview', 'productImageUpload', 'productImageRemove');
+        removeImage('productDetailImageFile', 'productDetailImagePreview', 'productDetailImageUpload', 'productDetailImageRemove');
+        editingProductId = null;
+
+        showToast('<i class="fas fa-check-circle"></i> تم حفظ المنتج بنجاح!', 'success');
+
+        // 🔄 مزامنة Supabase في الخلفية
+        if (supabaseClient) {
+            try {
+                var syncData = Object.assign({}, productData);
+                if (isNew) delete syncData.id;
+
+                var result;
+                if (editingProductId) {
+                    result = await supabaseClient.from('products').update(syncData).eq('id', editingProductId);
+                } else {
+                    result = await supabaseClient.from('products').insert([syncData]).select();
+                }
+
+                if (result.error) throw result.error;
+
+                if (isNew && result.data && result.data[0]) {
+                    var supaId = result.data[0].id;
+                    var pidx = products.findIndex(function(p) { return p.id === localId; });
+                    if (pidx !== -1) {
+                        products[pidx].id = supaId;
+                        safeSaveProducts();
+                    }
+                }
+                showToast('<i class="fas fa-cloud"></i> تم المزامنة مع السحابة!', 'success');
+            } catch (err) {
+                console.error('❌ Supabase sync failed:', err);
+                showToast('<i class="fas fa-triangle-exclamation"></i> فشلت المزامنة: ' + err.message, 'error');
+            }
+        }
+
+    } catch (err) {
+        console.error('❌ Error in saveProduct:', err);
+        showToast('<i class="fas fa-circle-xmark"></i> حصل خطأ: ' + err.message, 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalBtnHtml || '<span><i class="fas fa-floppy-disk"></i></span><span>حفظ المنتج</span>';
+        }
     }
 }
 
@@ -1489,13 +1771,7 @@ async function deleteProduct(id) {
     if (!confirm('متأكد إنك عاوز تمسح المنتج دا؟')) return;
 
     products = products.filter(function(p) { return p.id !== id; });
-
-    try {
-        localStorage.setItem('stackstore_products', JSON.stringify(products));
-    } catch (e) {
-        console.warn('localStorage full:', e);
-    }
-
+    localStorage.setItem('stackstore_products', JSON.stringify(products));
     renderProducts();
     renderAdminProducts();
     updateStats();
@@ -1503,9 +1779,13 @@ async function deleteProduct(id) {
 
     if (supabaseClient) {
         try {
-            await supabaseClient.from('products').delete().eq('id', id);
-        } catch (e) {
-            console.log('Supabase delete failed:', e);
+            var result = await supabaseClient.from('products').delete().eq('id', id);
+            if (result.error) throw result.error;
+            console.log('✅ Product deleted from Supabase');
+            showToast('<i class="fas fa-cloud"></i> تم المزامنة مع السحابة!', 'success');
+        } catch (err) {
+            console.error('❌ Failed to delete product from Supabase:', err);
+            showToast('<i class="fas fa-triangle-exclamation"></i> فشلت المزامنة: ' + err.message, 'error');
         }
     }
 }
@@ -1619,8 +1899,8 @@ async function addDelivery() {
                     localStorage.setItem('stackstore_deliveries', JSON.stringify(deliveries));
                     console.log('✅ Delivery synced to Supabase with id:', remoteId);
                 }
-            } catch (supaErr) { 
-                console.warn('⚠️ Supabase upload failed:', supaErr.message); 
+            } catch (supaErr) {
+                console.warn('⚠️ Supabase upload failed:', supaErr.message);
             }
         }
 
@@ -1771,7 +2051,6 @@ async function deleteReview(id) {
                 var imagePath = reviewToDelete.image.split('/').pop();
                 await supabaseClient.storage.from('stackstore').remove(['reviews/' + imagePath]);
             }
-            // Try delete by id first, if that fails try by created_at as fallback
             var result = await supabaseClient.from('reviews').delete().eq('id', id);
             if (result.error && reviewToDelete.created_at) {
                 await supabaseClient.from('reviews').delete().eq('created_at', reviewToDelete.created_at);
@@ -1862,17 +2141,20 @@ async function openCategoryModal(catId) {
     if (newIcon === null) newIcon = '';
     newIcon = newIcon.trim();
 
+    var newId;
     if (isEdit) {
         var idx = categories.findIndex(function(c) { return c.id === catId; });
         if (idx !== -1) {
             categories[idx].name = newName;
             categories[idx].icon = newIcon;
+            newId = catId;
         }
     } else {
-        var newId = 'cat_' + Date.now();
+        newId = 'cat_' + Date.now();
         categories.push({ id: newId, name: newName, icon: newIcon, sort_order: categories.length });
     }
 
+    // ⚡ INSTANT: Save locally + render immediately
     try {
         localStorage.setItem('stackstore_categories', JSON.stringify(categories));
     } catch (e) {
@@ -1885,16 +2167,21 @@ async function openCategoryModal(catId) {
     renderProducts();
     showToast('<i class="fas fa-check-circle"></i> تم حفظ القسم بنجاح!', 'success');
 
+    // 🔄 BACKGROUND: Sync to Supabase with visible error handling
     if (supabaseClient) {
         try {
+            var result;
             if (isEdit) {
-                await supabaseClient.from('categories').update({ name: newName, icon: newIcon }).eq('id', catId);
+                result = await supabaseClient.from('categories').update({ name: newName, icon: newIcon }).eq('id', catId);
             } else {
-                var newCat = categories[categories.length - 1];
-                await supabaseClient.from('categories').insert([newCat]);
+                result = await supabaseClient.from('categories').insert([{ id: newId, name: newName, icon: newIcon, sort_order: categories.length - 1 }]);
             }
-        } catch (e) {
-            console.log('Supabase category sync failed:', e);
+            if (result.error) throw result.error;
+            console.log('✅ Category synced to Supabase');
+            showToast('<i class="fas fa-cloud"></i> تم المزامنة مع السحابة!', 'success');
+        } catch (err) {
+            console.error('❌ Failed to sync category to Supabase:', err);
+            showToast('<i class="fas fa-triangle-exclamation"></i> فشلت المزامنة: ' + err.message, 'error');
         }
     }
 }
@@ -1907,32 +2194,18 @@ async function deleteCategory(catId) {
         products.forEach(function(p) {
             if (p.category === catId) p.category = 'other';
         });
-        try {
-            localStorage.setItem('stackstore_products', JSON.stringify(products));
-        } catch (e) {
-            console.warn('localStorage full:', e);
-        }
-        if (supabaseClient) {
-            try {
-                await supabaseClient.from('products').update({ category: 'other' }).eq('category', catId);
-            } catch (e) { console.log(e); }
-        }
     } else {
         if (!confirm('متأكد إنك عاوز تمسح القسم "' + getCategoryName(catId) + '"؟')) return;
     }
 
     categories = categories.filter(function(c) { return c.id !== catId; });
 
+    // ⚡ INSTANT: Save locally + render immediately
     try {
         localStorage.setItem('stackstore_categories', JSON.stringify(categories));
+        localStorage.setItem('stackstore_products', JSON.stringify(products));
     } catch (e) {
         console.warn('localStorage full:', e);
-    }
-
-    if (supabaseClient) {
-        try {
-            await supabaseClient.from('categories').delete().eq('id', catId);
-        } catch (e) { console.log(e); }
     }
 
     if (currentFilter === catId) {
@@ -1946,6 +2219,21 @@ async function deleteCategory(catId) {
     renderAdminCategories();
     renderAdminProducts();
     showToast('<i class="fas fa-trash"></i> تم مسح القسم!', 'success');
+
+    // 🔄 BACKGROUND: Sync to Supabase with visible error handling
+    if (supabaseClient) {
+        try {
+            var result = await supabaseClient.from('categories').delete().eq('id', catId);
+            if (result.error) throw result.error;
+            var result2 = await supabaseClient.from('products').update({ category: 'other' }).eq('category', catId);
+            if (result2.error) throw result2.error;
+            console.log('✅ Category deleted from Supabase');
+            showToast('<i class="fas fa-cloud"></i> تم المزامنة مع السحابة!', 'success');
+        } catch (err) {
+            console.error('❌ Failed to delete category from Supabase:', err);
+            showToast('<i class="fas fa-triangle-exclamation"></i> فشلت المزامنة: ' + err.message, 'error');
+        }
+    }
 }
 
 async function addReviewImage() {
@@ -1996,7 +2284,7 @@ async function addReviewImage() {
         removeImage('reviewFile', 'reviewPreview', 'reviewUpload', 'reviewRemove');
         if (progressBar) progressBar.style.width = '100%';
         if (overlay) overlay.classList.remove('active');
-        renderReviewImages();
+        // renderReviewImages(); // Disabled - uses testimonials instead
         showToast('✅ تم حفظ صورة الرأي بنجاح!', 'success');
 
     } catch (err) {
@@ -2012,7 +2300,7 @@ async function deleteReviewImage(id) {
     var reviewToDelete = reviewImages.find(function(r) { return r.id === id; });
     reviewImages = reviewImages.filter(function(r) { return r.id !== id; });
     localStorage.setItem('stackstore_review_images', JSON.stringify(reviewImages));
-    renderReviewImages();
+    // renderReviewImages(); // Disabled - uses testimonials instead
     showToast('🗑️ تم المسح!', 'success');
 
     if (supabaseClient && reviewToDelete) {
@@ -2027,13 +2315,13 @@ async function deleteReviewImage(id) {
 }
 
 function renderReviewImages() {
-    var container = document.getElementById('reviewsList');
+    // NOTE: This function is for the OLD Stack Store review images system.
+    // It is kept for backward compatibility but does NOT write to #reviewsList
+    // to avoid overwriting text reviews. Use testimonials instead.
+    if (!reviewImages || reviewImages.length === 0) return;
+    var container = document.getElementById('reviewImagesContainer');
     if (!container) return;
     if (isLoading) return;
-    if (reviewImages.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="icon">⭐</div><h3>لا توجد صور آراء بعد</h3><p>سيتم عرض صور آراء العملاء هنا</p></div>';
-        return;
-    }
     var sorted = reviewImages.slice().sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
     var html = '<div class="reviews-grid">';
     for (var i = 0; i < sorted.length; i++) {
@@ -2139,10 +2427,10 @@ async function saveTestimonial() {
         var remoteId = await syncToSupabase('testimonials', testimonial);
         if (remoteId) {
             closeTestimonialModal();
-            showToast('<i class="fas fa-check-circle"></i> تم حفظ صورة الرأي في السحابة!', 'success');
+            console.log('✅ تم حفظ صورة الرأي في السحابة!');
         } else {
             closeTestimonialModal();
-            showToast('<i class="fas fa-triangle-exclamation"></i> تم الحفظ محلياً فقط - Supabase غير متاح', 'warning');
+            console.log('⚠️ تم الحفظ محلياً فقط - Supabase غير متاح');
         }
     } else {
         closeTestimonialModal();
@@ -2197,98 +2485,6 @@ async function deleteTestimonial(id) {
     }
 }
 
-/* ====== SUPABASE HEALTH & MIGRATION ====== */
-
-async function checkSupabaseHealth() {
-    if (!supabaseClient) return { ok: false, error: 'Supabase client not ready' };
-    try {
-        var { error } = await supabaseClient.from('products').select('id', { head: true, count: 'exact' });
-        if (error && error.code === 'PGRST205') return { ok: false, error: 'Tables missing', code: 'PGRST205' };
-        if (error) return { ok: false, error: error.message, code: error.code };
-        return { ok: true };
-    } catch (e) {
-        return { ok: false, error: e.message };
-    }
-}
-
-async function migrateAllToSupabase() {
-    if (!supabaseClient) { showToast('❌ Supabase مش متاح', 'error'); return; }
-
-    var health = await checkSupabaseHealth();
-    if (!health.ok && health.code === 'PGRST205') {
-        showToast('⚠️ لسّه الجداول ناقصة! نفّذ SQL script في Supabase الأول', 'error');
-        return;
-    }
-    if (!health.ok) {
-        showToast('❌ مشكلة في Supabase: ' + health.error, 'error');
-        return;
-    }
-
-    showToast('🚀 جاري نقل البيانات المحلية للسحابة...', 'info');
-    var migrated = 0;
-
-    // Migrate products
-    if (products.length > 0) {
-        try {
-            var { error } = await supabaseClient.from('products').upsert(products, { onConflict: 'id' });
-            if (error) throw error;
-            migrated += products.length;
-        } catch (e) { console.warn('Products migration failed:', e.message); }
-    }
-
-    // Migrate categories
-    if (categories.length > 0) {
-        try {
-            var { error } = await supabaseClient.from('categories').upsert(categories, { onConflict: 'id' });
-            if (error) throw error;
-            migrated += categories.length;
-        } catch (e) { console.warn('Categories migration failed:', e.message); }
-    }
-
-    // Migrate deliveries
-    if (deliveries.length > 0) {
-        try {
-            var cleanDeliveries = deliveries.map(function(d) {
-                var copy = Object.assign({}, d);
-                delete copy.date;
-                return copy;
-            });
-            var { error } = await supabaseClient.from('deliveries').upsert(cleanDeliveries, { onConflict: 'id' });
-            if (error) throw error;
-            migrated += deliveries.length;
-        } catch (e) { console.warn('Deliveries migration failed:', e.message); }
-    }
-
-    // Migrate reviews
-    if (reviews.length > 0) {
-        try {
-            var cleanReviews = reviews.map(function(r) {
-                var copy = Object.assign({}, r);
-                delete copy.date;
-                return copy;
-            });
-            var { error } = await supabaseClient.from('reviews').upsert(cleanReviews, { onConflict: 'id' });
-            if (error) throw error;
-            migrated += reviews.length;
-        } catch (e) { console.warn('Reviews migration failed:', e.message); }
-    }
-
-    // Migrate testimonials
-    if (testimonials.length > 0) {
-        try {
-            var { error } = await supabaseClient.from('testimonials').upsert(testimonials, { onConflict: 'id' });
-            if (error) throw error;
-            migrated += testimonials.length;
-        } catch (e) { console.warn('Testimonials migration failed:', e.message); }
-    }
-
-    showToast('✅ تم نقل ' + migrated + ' سجل لـ Supabase!', 'success');
-    console.log('🚀 Migration complete:', migrated, 'records');
-
-    // Refresh from cloud to confirm
-    setTimeout(backgroundSyncFromSupabase, 1000);
-}
-
 /* ====== ADMIN & NAVIGATION ====== */
 function renderAdminSection() {
     document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
@@ -2299,25 +2495,23 @@ function renderAdminSection() {
     var adminSection = document.getElementById('admin');
     if (!adminSection) return;
 
-    // Show Supabase status warning if tables missing
     var statusHtml = '';
     if (window._supabaseTablesMissing) {
         statusHtml = '<div class="card" style="border-color:var(--danger);background:rgba(239,68,68,0.1);">' +
             '<div class="card-title" style="color:var(--danger);"><i class="fas fa-triangle-exclamation"></i> تنبيه: جداول Supabase ناقصة!</div>' +
-            '<p style="margin-bottom:15px;">المنتجات والأقسام والآراء مش هتتحفظ في السحابة لحد ما تنشئ الجداول. شغل SQL script في Supabase SQL Editor.</p>' +
+            '<p style="margin-bottom:15px;">التسليمات والآراء مش هتتحفظ في السحابة لحد ما تنشئ الجداول. شغل SQL script في Supabase SQL Editor.</p>' +
             '<button class="btn btn-primary" onclick="migrateAllToSupabase()" style="width:100%;justify-content:center;">' +
             '<span><i class="fas fa-cloud-arrow-up"></i></span><span>نقل البيانات المحلية للسحابة</span>' +
             '</button></div>';
     } else {
         statusHtml = '<div class="card" style="border-color:var(--success);background:rgba(34,197,94,0.08);">' +
             '<div class="card-title" style="color:var(--success);"><i class="fas fa-check-circle"></i> Supabase متصل</div>' +
-            '<p>كل البيانات بتتزامن مع السحابة.</p>' +
+            '<p>البيانات الديناميكية بتتزامن مع السحابة.</p>' +
             '<button class="btn btn-primary" onclick="backgroundSyncFromSupabase()" style="width:100%;justify-content:center;">' +
             '<span><i class="fas fa-rotate"></i></span><span>مزامنة يدوية</span>' +
             '</button></div>';
     }
 
-    // Insert status banner at top of admin section
     var existingStatus = document.getElementById('adminStatusBanner');
     if (!existingStatus) {
         var banner = document.createElement('div');
@@ -2336,7 +2530,7 @@ function renderAdminSection() {
 }
 
 function logoutAdmin() {
-    if (!confirm('متأكد إنك عاوز تسجل خروج؟ هتحتاج تدخل الكود تاني.')) return;
+    if (!confirm('متأكد إنك عاوز تسجل خروج؟ هتحتاج تدخل البيانات تاني.')) return;
     isAdmin = false;
     localStorage.removeItem(ADMIN_KEY);
     var adminBadge = document.getElementById('adminBadge');
@@ -2352,7 +2546,7 @@ function logoutAdmin() {
     showToast('👋 تم تسجيل الخروج!', 'success');
     showSection('products');
     renderDeliveries();
-    renderReviewImages();
+    // renderReviewImages(); // Disabled - uses testimonials instead
 }
 
 function updateStats() {
@@ -2449,17 +2643,19 @@ function openAdminLogin() {
     if (isAdmin) { showSection('admin'); return; }
     var overlay = document.getElementById('adminLoginOverlay');
     if (overlay) overlay.classList.add('active');
-    var input = document.getElementById('adminCodeInput');
-    if (input) {
-        input.value = '';
-        input.focus();
-    }
+    var emailInput = document.getElementById('adminEmail');
+    if (emailInput) { emailInput.value = ''; emailInput.focus(); }
+    var passInput = document.getElementById('adminPassword');
+    if (passInput) passInput.value = '';
 }
 
-function checkAdminCode() {
-    var input = document.getElementById('adminCodeInput');
-    var code = input ? input.value.trim() : '';
-    if (code === ADMIN_CODE) {
+function loginAdmin() {
+    var emailInput = document.getElementById('adminEmail');
+    var passInput = document.getElementById('adminPassword');
+    var email = emailInput ? emailInput.value.trim() : '';
+    var password = passInput ? passInput.value.trim() : '';
+
+    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
         isAdmin = true;
         localStorage.setItem(ADMIN_KEY, 'true');
         var overlay = document.getElementById('adminLoginOverlay');
@@ -2468,10 +2664,10 @@ function checkAdminCode() {
         showToast('✅ تم تسجيل الدخول كأدمن! الجهاز دايماً هيفضل أدمن.', 'success');
         showSection('products');
     } else {
-        showToast('❌ كود الأدمن غلط! جرب تاني.', 'error');
-        if (input) {
-            input.value = '';
-            input.focus();
+        showToast('❌ البريد الإلكتروني أو كلمة المرور غلط! جرب تاني.', 'error');
+        if (passInput) {
+            passInput.value = '';
+            passInput.focus();
         }
     }
 }
@@ -2551,191 +2747,74 @@ function toggleFaq(element) {
     }
 }
 
-/* ====== STATUS BADGE STYLES (DYNAMIC) ====== */
-// CSS classes for status badges are in style.css
-// This section ensures JS adds correct classes
 
-/* ====== SWIPE TO CLOSE IMAGE MODAL ====== */
-(function() {
-    var imageModal = document.getElementById('imageModal');
-    if (!imageModal) return;
-    var touchStartY = 0;
-    imageModal.addEventListener('touchstart', function(e) {
-        touchStartY = e.touches[0].clientY;
-    }, { passive: true });
-    imageModal.addEventListener('touchend', function(e) {
-        var touchEndY = e.changedTouches[0].clientY;
-        if (Math.abs(touchEndY - touchStartY) > 80) {
-            closeModal();
-        }
-    }, { passive: true });
-})();
-
-/* ====== DRAWER ADMIN BUTTON SYNC ====== */
-function syncDrawerAdminButton() {
-    var drawerAdminBtn = document.getElementById('drawerAdminBtn');
-    if (!drawerAdminBtn) return;
-    if (isAdmin) {
-        drawerAdminBtn.onclick = function() { showSection('admin'); toggleMobileMenu(); };
-        drawerAdminBtn.innerHTML = '<i class="fas fa-cog"></i><span>لوحة التحكم</span>';
-    } else {
-        drawerAdminBtn.onclick = function() { openAdminLogin(); toggleMobileMenu(); };
-        drawerAdminBtn.innerHTML = '<i class="fas fa-lock"></i><span>لوحة الأدمن</span>';
+/* ====== SUPABASE HEALTH & MIGRATION ====== */
+async function checkSupabaseHealth() {
+    if (!supabaseClient) return { ok: false, error: 'Supabase client not ready' };
+    try {
+        var { error } = await supabaseClient.from('deliveries').select('id', { head: true, count: 'exact' });
+        if (error && error.code === 'PGRST205') return { ok: false, error: 'Tables missing', code: 'PGRST205' };
+        if (error) return { ok: false, error: error.message, code: error.code };
+        return { ok: true };
+    } catch (e) {
+        return { ok: false, error: e.message };
     }
 }
 
-/* ====== INIT DRAWER SYNC ====== */
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(syncDrawerAdminButton, 100);
-});
+async function migrateAllToSupabase() {
+    if (!supabaseClient) { console.log('❌ Supabase مش متاح'); return; }
 
-/* ====== SAFE LOCALSTORAGE CLEAR (ADMIN ONLY) ====== */
-function clearAllData() {
-    if (!isAdmin) { showToast('❌ محتاج تكون أدمن!', 'error'); return; }
-    if (!confirm('⚠️ هتمسح كل البيانات من الجهاز دا! متأكد؟')) return;
-    
-    localStorage.removeItem('stackstore_products');
-    localStorage.removeItem('stackstore_categories');
-    localStorage.removeItem('stackstore_deliveries');
-    localStorage.removeItem('stackstore_reviews');
-    localStorage.removeItem('stackstore_testimonials');
-    localStorage.removeItem('stackstore_review_images');
-    
-    products = JSON.parse(JSON.stringify(defaultProducts));
-    categories = JSON.parse(JSON.stringify(defaultCategories));
-    deliveries = [];
-    reviews = [];
-    testimonials = [];
-    reviewImages = [];
-    
-    renderProducts();
-    setupFilters();
-    renderDeliveries();
-    renderReviews();
-    renderReviewImages();
-    renderTestimonials();
-    updateStats();
-    
-    showToast('🗑️ تم مسح كل البيانات المحلية!', 'success');
-}
-
-/* ====== FIX: ENSURE SECTIONS SHOW ON FIRST LOAD ====== */
-(function() {
-    // Handle initial hash route
-    if (location.hash && location.hash !== '#/' && location.hash !== '') {
-        handleHashRoute();
-    } else {
-        // Make sure products section is visible on first load
-        var productsSection = document.getElementById('products');
-        if (productsSection && !productsSection.classList.contains('active')) {
-            document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
-            productsSection.classList.add('active');
-        }
-        var tabProducts = document.getElementById('tabProducts');
-        if (tabProducts && !tabProducts.classList.contains('active')) {
-            document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
-            tabProducts.classList.add('active');
-        }
-        if (window.history && window.history.replaceState) {
-            history.replaceState({ section: 'products' }, '', '#/products');
-        }
+    var health = await checkSupabaseHealth();
+    if (!health.ok && health.code === 'PGRST205') {
+        console.log('⚠️ لسّه الجداول ناقصة! نفّذ SQL script في Supabase الأول');
+        return;
     }
-})();
-
-/* ====== NETWORK STATUS INDICATOR ====== */
-window.addEventListener('online', function() {
-    console.log('🌐 Back online');
-    if (supabaseClient) backgroundSyncFromSupabase();
-});
-window.addEventListener('offline', function() {
-    console.log('📴 Offline mode - using localStorage');
-});
-
-/* ====== PERFORMANCE: LAZY LOAD IMAGES ====== */
-if ('IntersectionObserver' in window) {
-    var imageObserver = new IntersectionObserver(function(entries) {
-        entries.forEach(function(entry) {
-            if (entry.isIntersecting) {
-                var img = entry.target;
-                if (img.dataset.src) {
-                    img.src = img.dataset.src;
-                    img.removeAttribute('data-src');
-                }
-                imageObserver.unobserve(img);
-            }
-        });
-    });
-    
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(function() {
-            document.querySelectorAll('img[data-src]').forEach(function(img) {
-                imageObserver.observe(img);
-            });
-        }, 500);
-    });
-}
-
-/* ====== ERROR HANDLING WRAPPER ====== */
-window.onerror = function(msg, url, line) {
-    console.warn('⚠️ JS Error:', msg, 'at line', line);
-    return true;
-};
-
-/* ====== CONSOLE WELCOME ====== */
-console.log('%c🔥 Tamm Store', 'font-size:24px;font-weight:bold;color:#3b82f6;');
-console.log('%cLocal-first | Supabase sync | Admin: STACK9', 'font-size:12px;color:#64748b;');
-
-/* ====== FINAL SAFETY CHECKS & INIT ====== */
-
-// Ensure all critical DOM elements exist before operations
-function safeGet(id) {
-    var el = document.getElementById(id);
-    return el || null;
-}
-
-// Re-init on page visibility change (mobile back button fix)
-document.addEventListener('visibilitychange', function() {
-    if (!document.hidden && supabaseClient && !syncInProgress) {
-        setTimeout(backgroundSyncFromSupabase, 1000);
+    if (!health.ok) {
+        console.log('❌ مشكلة في Supabase:', health.error);
+        return;
     }
-});
 
-// Auto-save backup every 5 minutes (admin only)
-setInterval(function() {
-    if (isAdmin && products.length > 0) {
+    console.log('🚀 جاري نقل البيانات المحلية للسحابة...');
+    var migrated = 0;
+
+    if (deliveries.length > 0) {
         try {
-            localStorage.setItem('stackstore_auto_backup', JSON.stringify({
-                products: products,
-                categories: categories,
-                deliveries: deliveries,
-                reviews: reviews,
-                testimonials: testimonials,
-                timestamp: new Date().toISOString()
-            }));
-        } catch(e) {}
+            var cleanDeliveries = deliveries.map(function(d) {
+                var copy = Object.assign({}, d);
+                delete copy.date;
+                return copy;
+            });
+            var { error } = await supabaseClient.from('deliveries').upsert(cleanDeliveries, { onConflict: 'id' });
+            if (error) throw error;
+            migrated += deliveries.length;
+        } catch (e) { console.warn('Deliveries migration failed:', e.message); }
     }
-}, 300000); // 5 minutes
 
-// Preload critical images
-window.addEventListener('load', function() {
-    var preloadImages = ['logo.png', 'hero-banner.png'];
-    preloadImages.forEach(function(src) {
-        var img = new Image();
-        img.src = src;
-    });
-});
-
-// Fix: Ensure body scroll is restored if modal gets stuck
-setInterval(function() {
-    var anyModalOpen = document.querySelectorAll('.modal-overlay.active, .admin-login-overlay.active, .date-picker-overlay.active').length > 0;
-    var drawerOpen = document.getElementById('mobileDrawer') && document.getElementById('mobileDrawer').classList.contains('active');
-    if (!anyModalOpen && !drawerOpen && document.body.style.overflow === 'hidden') {
-        document.body.style.overflow = '';
+    if (reviews.length > 0) {
+        try {
+            var cleanReviews = reviews.map(function(r) {
+                var copy = Object.assign({}, r);
+                delete copy.date;
+                return copy;
+            });
+            var { error } = await supabaseClient.from('reviews').upsert(cleanReviews, { onConflict: 'id' });
+            if (error) throw error;
+            migrated += reviews.length;
+        } catch (e) { console.warn('Reviews migration failed:', e.message); }
     }
-}, 2000);
 
-// Version check
-console.log('📦 Tamm Store v2.0 - All fixes applied');
+    if (testimonials.length > 0) {
+        try {
+            var { error } = await supabaseClient.from('testimonials').upsert(testimonials, { onConflict: 'id' });
+            if (error) throw error;
+            migrated += testimonials.length;
+        } catch (e) { console.warn('Testimonials migration failed:', e.message); }
+    }
+
+    console.log('✅ تم نقل ' + migrated + ' سجل لـ Supabase!');
+    console.log('🚀 Migration complete:', migrated, 'records');
+    setTimeout(function() { console.log('🔄 Visibility changed, syncing...'); backgroundSyncFromSupabase(); }, 1000);
+}
 
 /* ====== DRAG & DROP SORTING ====== */
 function setupDragAndDrop(tableId, array, storageKey, skipFirst) {
@@ -2790,49 +2869,30 @@ function updateSortOrder(tbody, array, storageKey, skipFirst) {
         }
     });
 
-    // Merge with items not in table (like "all" category)
     array.forEach(function(item) {
         var exists = newOrder.find(function(x) { return String(x.id) === String(item.id); });
         if (!exists) newOrder.push(item);
     });
 
-    // Sort by sort_order
     newOrder.sort(function(a, b) { return a.sort_order - b.sort_order; });
 
-    // Update the original array
     if (storageKey === 'stackstore_products') {
         products = newOrder;
+        renderProducts();
     } else if (storageKey === 'stackstore_categories') {
         categories = newOrder;
+        setupFilters();
+        renderProducts();
     }
 
-    // Save to localStorage
     try {
         localStorage.setItem(storageKey, JSON.stringify(newOrder));
     } catch(e) {}
 
-    // Sync to Supabase
-    if (supabaseClient && !window._supabaseTablesMissing) {
-        var tableName = storageKey === 'stackstore_products' ? 'products' : 'categories';
-        newOrder.forEach(function(item) {
-            supabaseClient.from(tableName).update({ sort_order: item.sort_order }).eq('id', item.id).then(function(r) {
-                if (r.error) console.warn('Sort sync failed for', item.id);
-            });
-        });
-    }
-
     showToast('<i class="fas fa-check-circle"></i> تم تحديث الترتيب!', 'success');
-
-    // Re-render affected sections
-    if (storageKey === 'stackstore_products') {
-        renderProducts();
-    } else if (storageKey === 'stackstore_categories') {
-        setupFilters();
-        renderProducts();
-    }
 }
 
-// ====== IMPORT FROM STACK STORE ======
+/* ====== IMPORT FROM STACK STORE ====== */
 function importFromStackStore() {
     var input = document.createElement('input');
     input.type = 'file';
@@ -2845,7 +2905,7 @@ function importFromStackStore() {
             try {
                 var data = JSON.parse(event.target.result);
                 var imported = 0;
-                
+
                 if (data.deliveries) {
                     var oldDeliveries = JSON.parse(data.deliveries);
                     var currentDeliveries = JSON.parse(localStorage.getItem('stackstore_deliveries') || '[]');
@@ -2859,7 +2919,7 @@ function importFromStackStore() {
                     localStorage.setItem('stackstore_deliveries', JSON.stringify(currentDeliveries));
                     deliveries = currentDeliveries;
                 }
-                
+
                 if (data.reviews) {
                     var oldReviews = JSON.parse(data.reviews);
                     var currentReviews = JSON.parse(localStorage.getItem('stackstore_review_images') || '[]');
@@ -2873,9 +2933,9 @@ function importFromStackStore() {
                     localStorage.setItem('stackstore_review_images', JSON.stringify(currentReviews));
                     reviewImages = currentReviews;
                 }
-                
+
                 renderDeliveries();
-                renderReviewImages();
+                // renderReviewImages(); // Disabled - uses testimonials instead
                 updateStats();
                 showToast('✅ تم استيراد ' + imported + ' عنصر من Stack Store! ريفرش الصفحة.', 'success');
             } catch(err) {
@@ -2887,26 +2947,114 @@ function importFromStackStore() {
     input.click();
 }
 
-// Auto-add import button in admin settings
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(function() {
-        if (isAdmin) {
-            var adminSection = document.getElementById('admin');
-            if (adminSection) {
-                var cards = adminSection.querySelectorAll('.card');
-                var settingsCard = cards[cards.length - 1];
-                if (settingsCard) {
-                    var importBtn = document.createElement('button');
-                    importBtn.className = 'btn btn-success';
-                    importBtn.style.cssText = 'width:100%;justify-content:center;margin-top:10px;';
-                    importBtn.innerHTML = '<span><i class="fas fa-file-import"></i></span><span>استيراد من Stack Store</span>';
-                    importBtn.onclick = importFromStackStore;
-                    var firstBtn = settingsCard.querySelector('button');
-                    if (firstBtn) firstBtn.parentNode.insertBefore(importBtn, firstBtn.nextSibling);
-                }
-            }
-        }
-    }, 2500);
+/* ====== SAFE LOCALSTORAGE CLEAR (ADMIN ONLY) ====== */
+function clearAllData() {
+    if (!isAdmin) { showToast('❌ محتاج تكون أدمن!', 'error'); return; }
+    if (!confirm('⚠️ هتمسح كل البيانات الديناميكية من الجهاز دا! متأكد؟')) return;
+
+    localStorage.removeItem('stackstore_deliveries');
+    localStorage.removeItem('stackstore_reviews');
+    localStorage.removeItem('stackstore_testimonials');
+    localStorage.removeItem('stackstore_review_images');
+
+    deliveries = [];
+    reviews = [];
+    testimonials = [];
+    reviewImages = [];
+
+    renderDeliveries();
+    renderReviews();
+    // renderReviewImages(); // Disabled - uses testimonials instead
+    renderTestimonials();
+    updateStats();
+
+    showToast('🗑️ تم مسح كل البيانات المحلية!', 'success');
+}
+
+/* ====== NETWORK STATUS INDICATOR ====== */
+window.addEventListener('online', function() {
+    console.log('🌐 Back online');
+    if (supabaseClient) { console.log('🌐 Back online, syncing...'); backgroundSyncFromSupabase(); }
 });
+window.addEventListener('offline', function() {
+    console.log('📴 Offline mode - using localStorage');
+});
+
+/* ====== PERFORMANCE: LAZY LOAD IMAGES ====== */
+if ('IntersectionObserver' in window) {
+    var imageObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                var img = entry.target;
+                if (img.dataset.src) {
+                    img.src = img.dataset.src;
+                    img.removeAttribute('data-src');
+                }
+                imageObserver.unobserve(img);
+            }
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            document.querySelectorAll('img[data-src]').forEach(function(img) {
+                imageObserver.observe(img);
+            });
+        }, 500);
+    });
+}
+
+/* ====== ERROR HANDLING WRAPPER ====== */
+window.onerror = function(msg, url, line) {
+    console.warn('⚠️ JS Error:', msg, 'at line', line);
+    return true;
+};
+
+/* ====== CONSOLE WELCOME ====== */
+console.log('%c🔥 Tamm Store', 'font-size:24px;font-weight:bold;color:#3b82f6;');
+console.log('%cHybrid Mode | Products: Static ⚡ | Dynamic: Supabase', 'font-size:12px;color:#64748b;');
+
+/* ====== FINAL SAFETY CHECKS & INIT ====== */
+function safeGet(id) {
+    var el = document.getElementById(id);
+    return el || null;
+}
+
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden && supabaseClient && !syncInProgress) {
+        setTimeout(function() { console.log('🔄 Visibility changed, syncing...'); backgroundSyncFromSupabase(); }, 1000);
+    }
+});
+
+setInterval(function() {
+    if (isAdmin && products.length > 0) {
+        try {
+            localStorage.setItem('stackstore_auto_backup', JSON.stringify({
+                deliveries: deliveries,
+                reviews: reviews,
+                testimonials: testimonials,
+                timestamp: new Date().toISOString()
+            }));
+        } catch(e) {}
+    }
+}, 300000);
+
+window.addEventListener('load', function() {
+    var preloadImages = ['logo.png', 'hero-banner.png'];
+    preloadImages.forEach(function(src) {
+        var img = new Image();
+        img.src = src;
+    });
+});
+
+setInterval(function() {
+    var anyModalOpen = document.querySelectorAll('.modal-overlay.active, .admin-login-overlay.active, .date-picker-overlay.active').length > 0;
+    var drawerOpen = document.getElementById('mobileDrawer') && document.getElementById('mobileDrawer').classList.contains('active');
+    if (!anyModalOpen && !drawerOpen && document.body.style.overflow === 'hidden') {
+        document.body.style.overflow = '';
+    }
+}, 2000);
+
+console.log('📦 Tamm Store Hybrid v3.0 - All fixes applied');
 
 // ====== END OF APP.JS ======
