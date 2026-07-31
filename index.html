@@ -18,6 +18,8 @@
     <link rel="stylesheet" href="style.css">
     <base target="_blank">
 <base target="_blank">
+<base target="_blank">
+<base target="_blank">
 </head>
 <body>
     <div class="bg-anim"></div>
@@ -785,7 +787,19 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="product.js"></script>
+        <script>
+    // 🛡️ Dynamic config loader — prevents easy Source inspection
+    (function(){
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', 'config.js?v=' + Date.now(), false);
+      xhr.send();
+      if (xhr.status === 200) {
+        var script = document.createElement('script');
+        script.textContent = xhr.responseText;
+        document.head.appendChild(script);
+      }
+    })();
+    </script>
     <script src="app.js"></script>
 </body>
 </html>

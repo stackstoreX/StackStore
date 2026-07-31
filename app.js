@@ -1,13 +1,41 @@
-// ====== TAMM STORE - APP.JS (HYBRID VERSION) ======
-// Static products = Instant ⚡ | Supabase = Deliveries/Reviews/Testimonials only
 
-const ADMIN_EMAIL = 'admin';
-const ADMIN_PASSWORD = 'TAMM9';
-const ADMIN_KEY = 'stackstore_admin_device';
+async function hashPassword(pwd) {
+  const enc = new TextEncoder().encode(pwd);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
 
-const SUPABASE_URL = 'https://rrtlnaltxjxqdqjgafmm.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJydGxuYWx0eGp4cWRxamdhZm1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MDgzMTIsImV4cCI6MjEwMDk4NDMxMn0.YzZIlL3XAWKX5d5hBsdJ_XztWh19-JFcy5qqn2upVg0';
-const WHATSAPP_NUMBER = '201018484572';
+async function uploadToSupabaseStorage(file, folder) {
+    if (!supabaseClient || !file) return null;
+    try {
+        var ext = file.name.split('.').pop() || 'jpg';
+        if (ext.length > 5 || !/^[a-zA-Z0-9]+$/.test(ext)) ext = 'jpg';
+        var fileName = Date.now() + '_' + Math.random().toString(36).substring(2, 10) + '.' + ext;
+        var result = await supabaseClient.storage.from('products').upload(folder + '/' + fileName, file, {
+            cacheControl: '3600',
+            upsert: false,
+            contentType: file.type || 'image/jpeg'
+        });
+        if (result.error) throw result.error;
+        var urlResult = supabaseClient.storage.from('products').getPublicUrl(folder + '/' + fileName);
+        return urlResult.data.publicUrl;
+    } catch (e) {
+        console.warn('❌ فشل رفع الصورة:', e.message);
+        return null;
+    }
+}
+
+// 🛡️ Obfuscated config loader
+(function(){
+var _0=window._0||{},_u=_0.a||'',_k=_0.b||'',_w=_0.c||'',_m=_0.d||'',_p=_0.e||'',_x=_0.f||'';
+try{delete window._0;}catch(e){window._0=undefined;}
+window._$=function(i){return[_u,_k,_w,_m,_p,_x][i]||''};
+})();
+var SUPABASE_URL=window._$(0),SUPABASE_ANON_KEY=window._$(1),WHATSAPP_NUMBER=window._$(2);
+
+// 🏭 Default deliveries (pre-loaded)
+var DEFAULT_DELIVERIES = [{"id":31,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784946192686_hu01pwv4.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784946193705_o4tvp61b.jpg","notes":"","created_at":"2026-07-25T02:23:14.357","delivery_date":null},{"id":30,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784946063499_gon4t3q7.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784946064077_vaay4wfn.jpg","notes":"","created_at":"2026-07-25T02:21:04.474","delivery_date":null},{"id":29,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784847535194_zg12ktcg.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784847535738_br00glct.jpg","notes":"","created_at":"2026-07-23T22:58:56.167","delivery_date":null},{"id":28,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784828143111_jb41pj48.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784828143668_v5vgoenh.jpg","notes":"","created_at":"2026-07-23T17:35:43.966","delivery_date":null},{"id":27,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684902626_gqjwps4d.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684903301_257liwaw.jpg","notes":"","created_at":"2026-07-22T01:48:24.565","delivery_date":null},{"id":25,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684762867_5sqokkwn.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684763838_5nxtmwkv.jpg","notes":"","created_at":"2026-07-22T01:46:04.982","delivery_date":null},{"id":24,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684743585_ukul2roh.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684744597_b0zma31l.jpg","notes":"","created_at":"2026-07-22T01:45:45.683","delivery_date":null},{"id":23,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684712120_ueae6jtn.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684713047_chl4x50w.jpg","notes":"","created_at":"2026-07-22T01:45:14.03","delivery_date":null},{"id":22,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684699476_x15arwaw.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684700259_itsxkkuo.jpg","notes":"","created_at":"2026-07-22T01:45:01.142","delivery_date":null},{"id":21,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684683217_1hxvug7w.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684684022_xtg124sd.jpg","notes":"","created_at":"2026-07-22T01:44:45.31","delivery_date":null},{"id":19,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684651407_kmqdo10c.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684652509_qpsaew88.jpg","notes":"","created_at":"2026-07-22T01:44:13.711","delivery_date":null},{"id":18,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684639660_msxs8d9z.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684640592_1q82bmdg.jpg","notes":"","created_at":"2026-07-22T01:44:01.733","delivery_date":null},{"id":17,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684623364_35tfmbp7.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684624305_yzeg80td.jpg","notes":"","created_at":"2026-07-22T01:43:45.329","delivery_date":null},{"id":16,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684610158_ez9tobx9.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684611230_lcnov4oj.jpg","notes":"","created_at":"2026-07-22T01:43:32.162","delivery_date":null},{"id":15,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684585396_g03enqk0.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684586447_2axkrtsb.jpg","notes":"","created_at":"2026-07-22T01:43:07.458","delivery_date":null},{"id":14,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684550445_viu3mb0s.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684551226_av3xh9a7.jpg","notes":"","created_at":"2026-07-22T01:42:32.192","delivery_date":null},{"id":13,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684525892_prapwf35.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684526827_y3hbiq6t.jpg","notes":"","created_at":"2026-07-22T01:42:08.049","delivery_date":null},{"id":12,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684506793_pztrricp.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684507549_m8efb8zx.jpg","notes":"","created_at":"2026-07-22T01:41:49.087","delivery_date":null},{"id":11,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684491015_rvwxrcsm.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684491865_yt1t3gr4.jpg","notes":"","created_at":"2026-07-22T01:41:32.813","delivery_date":null},{"id":10,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684468495_t49xi1fa.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684469971_d7oyf7gt.jpg","notes":"","created_at":"2026-07-22T01:41:10.992","delivery_date":null},{"id":9,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684449984_q2u85pzk.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684450843_fxtukyn2.jpg","notes":"","created_at":"2026-07-22T01:40:52.031","delivery_date":null},{"id":8,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684432602_te919erj.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684433809_gwzeqbpl.jpg","notes":"","created_at":"2026-07-22T01:40:34.769","delivery_date":null},{"id":7,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684399679_vj0jnh5p.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684400418_ls4vn3fm.jpg","notes":"","created_at":"2026-07-22T01:40:01.371","delivery_date":null},{"id":6,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684378863_k6ere7wo.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684379595_0o8nzhym.jpg","notes":"","created_at":"2026-07-22T01:39:40.57","delivery_date":null},{"id":5,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684359401_6uffc5ku.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684360450_4ljjwpsp.jpg","notes":"","created_at":"2026-07-22T01:39:21.578","delivery_date":null},{"id":4,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684342990_48n4kb0p.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684344273_hj4qmtuc.jpg","notes":"","created_at":"2026-07-22T01:39:05.365","delivery_date":null},{"id":3,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684324105_cve4qswo.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684324987_jwbyukg7.jpg","notes":"","created_at":"2026-07-22T01:38:46.039","delivery_date":null},{"id":2,"payment_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/payments/1784684295433_b3pmb6al.jpg","delivery_image":"https://vakfdtxobojpvkiiscdx.supabase.co/storage/v1/object/public/stackstore/deliveries/1784684296831_yohyzfis.jpg","notes":"","created_at":"2026-07-22T01:38:17.707","delivery_date":null}];
+
 const PLACEHOLDER_IMG = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300" fill="%231e293b"%3E%3Crect width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%2364748b" font-family="Cairo" font-size="20"%3Eلا توجد صورة%3C/text%3E%3C/svg%3E';
 
 let supabaseClient = null;
@@ -26,7 +54,6 @@ let publicSelectedRating = 0;
 let currentProduct = null;
 let editingProductId = null;
 
-// ====== INIT PRODUCTS (INSTANT - NO WAITING) ======
 function mergeWithLocal(localArray, remoteArray, idField) {
     idField = idField || 'id';
     if (!Array.isArray(remoteArray) || remoteArray.length === 0) return localArray || [];
@@ -45,7 +72,6 @@ function mergeWithLocal(localArray, remoteArray, idField) {
     });
     return result;
 }
-
 
 function showSkeleton(containerId) {
     var container = document.getElementById(containerId);
@@ -77,9 +103,21 @@ async function initProducts() {
             if (prodError) {
                 console.error('❌ Supabase products error:', prodError);
             } else {
-                // ⚡ CRITICAL FIX: Trust Supabase even if empty (user intentionally deleted defaults)
                 products = prodData || [];
-                // ⚡ STRIP BASE64 from Supabase data before saving to localStorage
+                // 🔄 Preserve local sort_order after Supabase fetch
+                var localProds = localStorage.getItem('stackstore_products');
+                if (localProds) {
+                    try {
+                        var localData = JSON.parse(localProds);
+                        var sortMap = {};
+                        localData.forEach(function(lp) {
+                            if (typeof lp.sort_order === 'number') sortMap[lp.id] = lp.sort_order;
+                        });
+                        products.forEach(function(p) {
+                            if (sortMap[p.id] !== undefined) p.sort_order = sortMap[p.id];
+                        });
+                    } catch(e) {}
+                }
                 var cleanProducts = products.map(function(p) {
                     var c = Object.assign({}, p);
                     if (c.image && typeof c.image === 'string' && c.image.startsWith('data:')) c.image = '';
@@ -102,6 +140,20 @@ async function initProducts() {
                 console.error('❌ Supabase categories error:', catError);
             } else {
                 categories = catData || [];
+                // 🔄 Preserve local category sort_order after Supabase fetch
+                var localCats = localStorage.getItem('stackstore_categories');
+                if (localCats) {
+                    try {
+                        var localCatData = JSON.parse(localCats);
+                        var catSortMap = {};
+                        localCatData.forEach(function(lc) {
+                            if (typeof lc.sort_order === 'number') catSortMap[lc.id] = lc.sort_order;
+                        });
+                        categories.forEach(function(c) {
+                            if (catSortMap[c.id] !== undefined) c.sort_order = catSortMap[c.id];
+                        });
+                    } catch(e) {}
+                }
                 if (!categories.find(function(c){ return c.id === 'all'; })) {
                     categories.unshift({ id: 'all', name: 'الكل', icon: '📦', sort_order: 0 });
                 }
@@ -131,7 +183,6 @@ async function initProducts() {
     renderProducts(); setupFilters(); updateStats();
 }
 
-// ====== SUPABASE DEBUG HELPER ======
 async function checkSupabaseWriteAccess() {
     if (!supabaseClient) { showToast('❌ Supabase مش متصل', 'error'); return; }
     try {
@@ -145,7 +196,6 @@ async function checkSupabaseWriteAccess() {
     }
 }
 
-// ====== URL SLUG HELPER ======
 function slugify(text) {
     if (!text) return '';
     return text.toString().toLowerCase()
@@ -156,7 +206,6 @@ function slugify(text) {
         .replace(/-+$/, '');
 }
 
-// ====== HASH ROUTER ======
 function handleHashRoute() {
     var hash = location.hash;
     if (hash.startsWith('#/product/')) {
@@ -174,25 +223,27 @@ function handleHashRoute() {
     showSection('products');
 }
 
-// ====== DOM READY ======
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Tamm Hybrid initializing...');
-    isAdmin = localStorage.getItem(ADMIN_KEY) === 'true';
+    isAdmin = localStorage.getItem(window._$(5)) === 'true';
     initSupabase();
     setupEventListeners();
     checkAdminStatus();
-
-    // ⚡ STEP 1: Products load from Supabase/localStorage
     await initProducts();
-
-    // ⚡ Show skeleton for dynamic sections while loading
     showSkeleton('deliveriesList');
     showSkeleton('reviewsList');
-
-    // 🔄 STEP 2: Dynamic data loads in background
     await loadDynamicData();
-
     console.log('✅ Tamm Hybrid ready!');
+    // 🛡️ Security: Hide config from window after initialization
+    try {
+        if (window.CONFIG) {
+            Object.freeze(window.CONFIG);
+            var _cfg = window.CONFIG;
+            delete window.CONFIG;
+            (function(){ return _cfg; })();
+        }
+    } catch(e) {}
+
 });
 
 function initSupabase() {
@@ -210,13 +261,10 @@ function initSupabase() {
     }
 }
 
-// ====== LOAD DYNAMIC DATA ONLY (Deliveries, Reviews, Testimonials) ======
 async function loadDynamicData() {
     isLoading = true;
-
     var tablesMissing = false;
 
-    // Try Supabase for dynamic tables only
     if (supabaseClient) {
         try {
             console.log('🔄 Fetching dynamic data from Supabase...');
@@ -261,7 +309,6 @@ async function loadDynamicData() {
 
     window._supabaseTablesMissing = tablesMissing;
 
-    // Fallback to localStorage for dynamic data
     var cachedDeliveries = localStorage.getItem('stackstore_deliveries');
     var cachedReviews = localStorage.getItem('stackstore_reviews');
     var cachedTestimonials = localStorage.getItem('stackstore_testimonials');
@@ -280,7 +327,15 @@ async function loadDynamicData() {
         try { reviewImages = JSON.parse(cachedReviewImages); } catch(e) { reviewImages = []; }
     }
 
-    // Save dynamic data to localStorage for offline
+    // 🏭 Inject default deliveries if none exist
+    if (deliveries.length === 0 && typeof DEFAULT_DELIVERIES !== 'undefined' && DEFAULT_DELIVERIES.length > 0) {
+        deliveries = DEFAULT_DELIVERIES.slice();
+        try {
+            localStorage.setItem('stackstore_deliveries', JSON.stringify(deliveries));
+            console.log('✅ Loaded', deliveries.length, 'default deliveries');
+        } catch(e) {}
+    }
+
     try {
         localStorage.setItem('stackstore_deliveries', JSON.stringify(deliveries));
         localStorage.setItem('stackstore_reviews', JSON.stringify(reviews));
@@ -289,8 +344,6 @@ async function loadDynamicData() {
     } catch(e) {}
 
     isLoading = false;
-
-    // Render dynamic sections
     renderDeliveries();
     renderReviews();
     renderTestimonials();
@@ -397,46 +450,41 @@ function exportData() {
     showToast('✅ تم تحميل النسخة الاحتياطية!', 'success');
 }
 
-// ⚡ دالة جديدة: تحميل صورة من URL ورفعها على Supabase الجديد
 async function transferImage(imageUrl, folder) {
     if (!supabaseClient || !imageUrl) return null;
     try {
-        // لو الصورة مش من Supabase، سيبها زي ما هي
         if (!imageUrl.includes('supabase.co')) return imageUrl;
-        
+
         console.log('🔄 جاري نقل صورة:', imageUrl.split('/').pop());
-        
-        // حمل الصورة من URL القديم
+
         var response = await fetch(imageUrl);
         if (!response.ok) throw new Error('فشل تحميل الصورة');
-        
+
         var blob = await response.blob();
         var ext = imageUrl.split('.').pop().split('?')[0] || 'jpg';
         if (ext.length > 5 || !/^[a-zA-Z0-9]+$/.test(ext)) ext = 'jpg';
-        
+
         var fileName = Date.now() + '_' + Math.random().toString(36).substring(2, 10) + '.' + ext;
         var file = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
-        
-        // ارفع على Supabase الجديد (bucket: products)
+
         var result = await supabaseClient.storage.from('products').upload(folder + '/' + fileName, file, {
             cacheControl: '3600',
             upsert: false,
             contentType: file.type
         });
-        
+
         if (result.error) throw result.error;
-        
+
         var urlResult = supabaseClient.storage.from('products').getPublicUrl(folder + '/' + fileName);
         console.log('✅ تم نقل الصورة:', urlResult.data.publicUrl);
         return urlResult.data.publicUrl;
-        
+
     } catch (e) {
         console.warn('⚠️ فشل نقل الصورة، هنستخدم القديمة:', e.message);
-        return imageUrl; // هنرجع URL القديم لو فشل
+        return imageUrl;
     }
 }
 
-// ⚡ دالة الاستيراد المعدلة بالكامل
 async function importData(input) {
     var file = input.files[0];
     if (!file) return;
@@ -447,14 +495,12 @@ async function importData(input) {
             var importedD = 0, importedR = 0;
             var uploadedImages = 0;
 
-            // ====== DELIVERIES ======
             if (data.deliveries && Array.isArray(data.deliveries) && data.deliveries.length > 0) {
                 console.log('📦 جاري استيراد ' + data.deliveries.length + ' تسليم...');
-                
+
                 for (var i = 0; i < data.deliveries.length; i++) {
                     var d = data.deliveries[i];
-                    
-                    // تخطى لو موجود بالفعل
+
                     var exists = deliveries.find(function(x) { 
                         return x.id === d.id || (x.created_at && x.created_at === d.created_at); 
                     });
@@ -465,26 +511,23 @@ async function importData(input) {
 
                     showToast('⬆️ جاري نقل تسليم ' + (i+1) + '/' + data.deliveries.length + '...', 'info');
 
-                    // ⚡ انقل صورة الدفع
                     if (d.payment_image) {
                         var newPayment = await transferImage(d.payment_image, 'payments');
                         if (newPayment !== d.payment_image) uploadedImages++;
                         d.payment_image = newPayment;
                     }
-                    
-                    // ⚡ انقل صورة التسليم
+
                     if (d.delivery_image) {
                         var newDelivery = await transferImage(d.delivery_image, 'deliveries');
                         if (newDelivery !== d.delivery_image) uploadedImages++;
                         d.delivery_image = newDelivery;
                     }
-                    
-                    // ⚡ احفظ في Supabase الجديد
+
                     if (supabaseClient) {
                         var clean = Object.assign({}, d);
-                        delete clean.id;        // عشان Supabase يعمل id جديد
-                        delete clean.date;      // مش موجود في الجدول
-                        
+                        delete clean.id;
+                        delete clean.date;
+
                         var res = await supabaseClient.from('deliveries').insert([clean]).select();
                         if (!res.error && res.data && res.data[0]) {
                             d.id = res.data[0].id;
@@ -493,21 +536,20 @@ async function importData(input) {
                             console.warn('⚠️ فشل حفظ تسليم #' + (i+1) + ' في Supabase:', res.error.message);
                         }
                     }
-                    
+
                     deliveries.unshift(d);
                     importedD++;
                 }
-                
+
                 localStorage.setItem('stackstore_deliveries', JSON.stringify(deliveries));
             }
 
-            // ====== REVIEWS (صور الآراء) ======
             if (data.reviews && Array.isArray(data.reviews) && data.reviews.length > 0) {
                 console.log('⭐ جاري استيراد ' + data.reviews.length + ' صورة رأي...');
-                
+
                 for (var j = 0; j < data.reviews.length; j++) {
                     var r = data.reviews[j];
-                    
+
                     var existsR = reviewImages.find(function(x) { return x.id === r.id; });
                     if (existsR) continue;
 
@@ -521,7 +563,7 @@ async function importData(input) {
                         var cleanR = Object.assign({}, r);
                         delete cleanR.id;
                         delete cleanR.date;
-                        
+
                         var resR = await supabaseClient.from('reviews').insert([cleanR]).select();
                         if (!resR.error && resR.data && resR.data[0]) {
                             r.id = resR.data[0].id;
@@ -531,23 +573,22 @@ async function importData(input) {
                     reviewImages.unshift(r);
                     importedR++;
                 }
-                
+
                 localStorage.setItem('stackstore_review_images', JSON.stringify(reviewImages));
             }
 
-            // ⚡ رندر كل حاجة
             renderDeliveries();
             renderReviewImages();
             updateStats();
-            
+
             showToast(
                 '✅ تم الاستيراد! ' + importedD + ' تسليم و ' + importedR + ' صورة رأي. ' +
                 '(' + uploadedImages + ' صورة رُفعت على السيرفر الجديد)',
                 'success'
             );
-            
+
             console.log('🎉 انتهى الاستيراد:', importedD, 'تسليم |', importedR, 'رأي |', uploadedImages, 'صورة مرفوعة');
-            
+
         } catch (err) { 
             console.error('❌ خطأ في الاستيراد:', err);
             showToast('❌ ملف غير صالح أو حصل خطأ!', 'error'); 
@@ -1076,7 +1117,6 @@ function renderProducts() {
     container.innerHTML = html;
 }
 
-
 function showProductDetail(productId) {
     var p = products.find(function(x) { return x.id === productId; });
     if (!p) return;
@@ -1094,7 +1134,6 @@ function showProductDetail(productId) {
     var durationsHtml = '';
     var priceDisplayHtml = '';
 
-    // ⚡ AUTO-SELECT LOWEST AVAILABLE PRICE (shared OR private)
     selectedDurationIdx = 0;
     selectedType = 'shared';
 
@@ -1102,7 +1141,6 @@ function showProductDetail(productId) {
         var bestOption = null;
         var bestPrice = Infinity;
 
-        // Search all durations and both types for lowest available price
         p.prices.forEach(function(pr, idx) {
             var shared = pr.shared_price || pr.price || 0;
             var priv = pr.private_price || pr.price || 0;
@@ -1117,7 +1155,6 @@ function showProductDetail(productId) {
             }
         });
 
-        // If no price found at all, fallback to first duration
         if (!bestOption) {
             bestOption = { idx: 0, type: 'shared', price: 0, duration: p.prices[0].duration };
         }
@@ -1226,7 +1263,6 @@ function selectType(type) {
     if (currentProduct && currentProduct.prices[selectedDurationIdx]) {
         var pr = currentProduct.prices[selectedDurationIdx];
         var hasPrice = type === 'shared' ? (pr.shared_price || pr.price) : (pr.private_price || pr.price);
-        // ⚡ If current duration doesn't have this type, find first available duration for this type
         if (!hasPrice) {
             var found = false;
             for (var i = 0; i < currentProduct.prices.length; i++) {
@@ -1242,7 +1278,6 @@ function selectType(type) {
                     break;
                 }
             }
-            // If no duration has this type at all, stay on current but show unavailable
             if (!found) {
                 showToast('<i class="fas fa-circle-info"></i> هذا النوع غير متوفر في أي مدة', 'info');
             }
@@ -1336,7 +1371,6 @@ function orderProduct(productId) {
 
     var price = selectedType === 'shared' ? (selectedPrice.shared_price || selectedPrice.price || 0) : (selectedPrice.private_price || selectedPrice.price || 0);
 
-    // ⚡ CRITICAL FIX: Don't send WhatsApp if price is 0 or invalid
     if (!price || price <= 0) {
         showToast('<i class="fas fa-circle-xmark"></i> السعر غير متوفر لهذا النوع/المدة!', 'error');
         return;
@@ -1551,8 +1585,6 @@ function removePriceRow(btn) {
     }
 }
 
-
-// ⚡ دالة مساعدة: تشيل Base64 من كل المنتجات
 function stripBase64FromProducts(arr) {
     if (!Array.isArray(arr)) return [];
     return arr.map(function(p) {
@@ -1563,7 +1595,6 @@ function stripBase64FromProducts(arr) {
     });
 }
 
-// ⚡ دالة مساعدة: تحفظ في localStorage ولو فشل بتنضف القديم
 function safeSaveProducts() {
     var clean = stripBase64FromProducts(products);
     var json = JSON.stringify(clean);
@@ -1615,11 +1646,9 @@ async function saveProduct() {
 
         if (!name) { showToast('<i class="fas fa-circle-xmark"></i> أدخل اسم المنتج!', 'error'); return; }
 
-        // ⚡ FIX: رفع الصورة على Supabase Storage لو فيه ملف (مش Base64)
         var image = prodImageUrl ? prodImageUrl.value.trim() : '';
         var imageFile = document.getElementById('productImageFile').files[0];
 
-        // ⚡ FIX 3: تأكد إن الـ client مهيأ بالكامل
         if (imageFile && supabaseClient && window.supabase) {
                 try {
                 showToast('<i class="fas fa-cloud-arrow-up"></i> جاري رفع الصورة...', 'info');
@@ -1634,7 +1663,6 @@ async function saveProduct() {
             showToast('<i class="fas fa-triangle-exclamation"></i> لا يوجد اتصال بالسحابة - الصورة لن تُحفظ', 'warning');
         }
 
-        // ⚡ FIX: نفس الكلام لصورة التفاصيل
         var detailImage = '';
         var prodDetailImageUrl = document.getElementById('prodDetailImageUrl');
         if (prodDetailImageUrl) detailImage = prodDetailImageUrl.value.trim();
@@ -1701,16 +1729,13 @@ async function saveProduct() {
             products.unshift(productData);
         }
 
-        // ⚡ FIX: اشيل Base64 من كل المنتجات قبل الحفظ
         safeSaveProducts();
 
-        // ⚡ تحديث الواجهة فوراً واقفل الـ Modal
         renderProducts();
         renderAdminProducts();
         updateStats();
         closeProductModal();
 
-        // نضف النموذج
         if (prodName) prodName.value = '';
         if (prodDesc) prodDesc.value = '';
         if (prodImageUrl) prodImageUrl.value = '';
@@ -1726,7 +1751,6 @@ async function saveProduct() {
 
         showToast('<i class="fas fa-check-circle"></i> تم حفظ المنتج بنجاح!', 'success');
 
-        // 🔄 مزامنة Supabase في الخلفية
         if (supabaseClient) {
             try {
                 var syncData = Object.assign({}, productData);
@@ -2154,7 +2178,6 @@ async function openCategoryModal(catId) {
         categories.push({ id: newId, name: newName, icon: newIcon, sort_order: categories.length });
     }
 
-    // ⚡ INSTANT: Save locally + render immediately
     try {
         localStorage.setItem('stackstore_categories', JSON.stringify(categories));
     } catch (e) {
@@ -2167,7 +2190,6 @@ async function openCategoryModal(catId) {
     renderProducts();
     showToast('<i class="fas fa-check-circle"></i> تم حفظ القسم بنجاح!', 'success');
 
-    // 🔄 BACKGROUND: Sync to Supabase with visible error handling
     if (supabaseClient) {
         try {
             var result;
@@ -2200,7 +2222,6 @@ async function deleteCategory(catId) {
 
     categories = categories.filter(function(c) { return c.id !== catId; });
 
-    // ⚡ INSTANT: Save locally + render immediately
     try {
         localStorage.setItem('stackstore_categories', JSON.stringify(categories));
         localStorage.setItem('stackstore_products', JSON.stringify(products));
@@ -2220,7 +2241,6 @@ async function deleteCategory(catId) {
     renderAdminProducts();
     showToast('<i class="fas fa-trash"></i> تم مسح القسم!', 'success');
 
-    // 🔄 BACKGROUND: Sync to Supabase with visible error handling
     if (supabaseClient) {
         try {
             var result = await supabaseClient.from('categories').delete().eq('id', catId);
@@ -2284,7 +2304,6 @@ async function addReviewImage() {
         removeImage('reviewFile', 'reviewPreview', 'reviewUpload', 'reviewRemove');
         if (progressBar) progressBar.style.width = '100%';
         if (overlay) overlay.classList.remove('active');
-        // renderReviewImages(); // Disabled - uses testimonials instead
         showToast('✅ تم حفظ صورة الرأي بنجاح!', 'success');
 
     } catch (err) {
@@ -2300,7 +2319,6 @@ async function deleteReviewImage(id) {
     var reviewToDelete = reviewImages.find(function(r) { return r.id === id; });
     reviewImages = reviewImages.filter(function(r) { return r.id !== id; });
     localStorage.setItem('stackstore_review_images', JSON.stringify(reviewImages));
-    // renderReviewImages(); // Disabled - uses testimonials instead
     showToast('🗑️ تم المسح!', 'success');
 
     if (supabaseClient && reviewToDelete) {
@@ -2315,9 +2333,6 @@ async function deleteReviewImage(id) {
 }
 
 function renderReviewImages() {
-    // NOTE: This function is for the OLD Stack Store review images system.
-    // It is kept for backward compatibility but does NOT write to #reviewsList
-    // to avoid overwriting text reviews. Use testimonials instead.
     if (!reviewImages || reviewImages.length === 0) return;
     var container = document.getElementById('reviewImagesContainer');
     if (!container) return;
@@ -2356,7 +2371,6 @@ function showToast(message, type) {
     setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 3000);
 }
 
-/* ====== TESTIMONIALS ====== */
 function renderTestimonials() {
     var container = document.getElementById('testimonialsCarousel');
     if (!container) return;
@@ -2485,7 +2499,6 @@ async function deleteTestimonial(id) {
     }
 }
 
-/* ====== ADMIN & NAVIGATION ====== */
 function renderAdminSection() {
     document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
     document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
@@ -2532,7 +2545,7 @@ function renderAdminSection() {
 function logoutAdmin() {
     if (!confirm('متأكد إنك عاوز تسجل خروج؟ هتحتاج تدخل البيانات تاني.')) return;
     isAdmin = false;
-    localStorage.removeItem(ADMIN_KEY);
+    localStorage.removeItem(window._$(5));
     var adminBadge = document.getElementById('adminBadge');
     if (adminBadge) adminBadge.classList.remove('active');
     var addDeliveryForm = document.getElementById('addDeliveryForm');
@@ -2546,7 +2559,6 @@ function logoutAdmin() {
     showToast('👋 تم تسجيل الخروج!', 'success');
     showSection('products');
     renderDeliveries();
-    // renderReviewImages(); // Disabled - uses testimonials instead
 }
 
 function updateStats() {
@@ -2649,27 +2661,21 @@ function openAdminLogin() {
     if (passInput) passInput.value = '';
 }
 
-function loginAdmin() {
-    var emailInput = document.getElementById('adminEmail');
-    var passInput = document.getElementById('adminPassword');
-    var email = emailInput ? emailInput.value.trim() : '';
-    var password = passInput ? passInput.value.trim() : '';
+async function loginAdmin() {
+  const email = document.getElementById('adminEmail')?.value.trim();
+  const pwd = document.getElementById('adminPassword')?.value.trim();
+  const inputHash = await hashPassword(pwd);
 
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-        isAdmin = true;
-        localStorage.setItem(ADMIN_KEY, 'true');
-        var overlay = document.getElementById('adminLoginOverlay');
-        if (overlay) overlay.classList.remove('active');
-        checkAdminStatus();
-        showToast('✅ تم تسجيل الدخول كأدمن! الجهاز دايماً هيفضل أدمن.', 'success');
-        showSection('products');
-    } else {
-        showToast('❌ البريد الإلكتروني أو كلمة المرور غلط! جرب تاني.', 'error');
-        if (passInput) {
-            passInput.value = '';
-            passInput.focus();
-        }
-    }
+  if (email === window._$(3) && inputHash === window._$(4)) {
+    isAdmin = true;
+    localStorage.setItem(window._$(5), 'true');
+    document.getElementById('adminLoginOverlay').classList.remove('active');
+    checkAdminStatus();
+    showToast('✅ تم تسجيل الدخول!', 'success');
+    showSection('products');
+  } else {
+    showToast('❌ البيانات غلط!', 'error');
+  }
 }
 
 function showSection(sectionId) {
@@ -2747,8 +2753,6 @@ function toggleFaq(element) {
     }
 }
 
-
-/* ====== SUPABASE HEALTH & MIGRATION ====== */
 async function checkSupabaseHealth() {
     if (!supabaseClient) return { ok: false, error: 'Supabase client not ready' };
     try {
@@ -2816,7 +2820,6 @@ async function migrateAllToSupabase() {
     setTimeout(function() { console.log('🔄 Visibility changed, syncing...'); backgroundSyncFromSupabase(); }, 1000);
 }
 
-/* ====== DRAG & DROP SORTING ====== */
 function setupDragAndDrop(tableId, array, storageKey, skipFirst) {
     var table = document.getElementById(tableId);
     if (!table) return;
@@ -2892,7 +2895,6 @@ function updateSortOrder(tbody, array, storageKey, skipFirst) {
     showToast('<i class="fas fa-check-circle"></i> تم تحديث الترتيب!', 'success');
 }
 
-/* ====== IMPORT FROM STACK STORE ====== */
 function importFromStackStore() {
     var input = document.createElement('input');
     input.type = 'file';
@@ -2935,7 +2937,6 @@ function importFromStackStore() {
                 }
 
                 renderDeliveries();
-                // renderReviewImages(); // Disabled - uses testimonials instead
                 updateStats();
                 showToast('✅ تم استيراد ' + imported + ' عنصر من Stack Store! ريفرش الصفحة.', 'success');
             } catch(err) {
@@ -2947,7 +2948,6 @@ function importFromStackStore() {
     input.click();
 }
 
-/* ====== SAFE LOCALSTORAGE CLEAR (ADMIN ONLY) ====== */
 function clearAllData() {
     if (!isAdmin) { showToast('❌ محتاج تكون أدمن!', 'error'); return; }
     if (!confirm('⚠️ هتمسح كل البيانات الديناميكية من الجهاز دا! متأكد؟')) return;
@@ -2964,14 +2964,12 @@ function clearAllData() {
 
     renderDeliveries();
     renderReviews();
-    // renderReviewImages(); // Disabled - uses testimonials instead
     renderTestimonials();
     updateStats();
 
     showToast('🗑️ تم مسح كل البيانات المحلية!', 'success');
 }
 
-/* ====== NETWORK STATUS INDICATOR ====== */
 window.addEventListener('online', function() {
     console.log('🌐 Back online');
     if (supabaseClient) { console.log('🌐 Back online, syncing...'); backgroundSyncFromSupabase(); }
@@ -2980,7 +2978,6 @@ window.addEventListener('offline', function() {
     console.log('📴 Offline mode - using localStorage');
 });
 
-/* ====== PERFORMANCE: LAZY LOAD IMAGES ====== */
 if ('IntersectionObserver' in window) {
     var imageObserver = new IntersectionObserver(function(entries) {
         entries.forEach(function(entry) {
@@ -3004,17 +3001,14 @@ if ('IntersectionObserver' in window) {
     });
 }
 
-/* ====== ERROR HANDLING WRAPPER ====== */
 window.onerror = function(msg, url, line) {
     console.warn('⚠️ JS Error:', msg, 'at line', line);
     return true;
 };
 
-/* ====== CONSOLE WELCOME ====== */
 console.log('%c🔥 Tamm Store', 'font-size:24px;font-weight:bold;color:#3b82f6;');
 console.log('%cHybrid Mode | Products: Static ⚡ | Dynamic: Supabase', 'font-size:12px;color:#64748b;');
 
-/* ====== FINAL SAFETY CHECKS & INIT ====== */
 function safeGet(id) {
     var el = document.getElementById(id);
     return el || null;
@@ -3056,5 +3050,3 @@ setInterval(function() {
 }, 2000);
 
 console.log('📦 Tamm Store Hybrid v3.0 - All fixes applied');
-
-// ====== END OF APP.JS ======
