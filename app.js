@@ -2892,6 +2892,23 @@ function updateSortOrder(tbody, array, storageKey, skipFirst) {
         localStorage.setItem(storageKey, JSON.stringify(newOrder));
     } catch(e) {}
 
+    // 🌐 Sync sort_order to Supabase
+    if (supabaseClient) {
+        var tableName = storageKey === 'stackstore_products' ? 'products' : 'categories';
+        var updates = newOrder.map(function(item) {
+            return { id: item.id, sort_order: item.sort_order };
+        });
+        supabaseClient.from(tableName).upsert(updates, { onConflict: 'id' }).then(function(result) {
+            if (result.error) {
+                console.warn('⚠️ Supabase sort sync failed:', result.error.message);
+            } else {
+                console.log('✅ Sort order synced to Supabase:', tableName);
+            }
+        }).catch(function(err) {
+            console.warn('⚠️ Sort sync error:', err.message);
+        });
+    }
+
     showToast('<i class="fas fa-check-circle"></i> تم تحديث الترتيب!', 'success');
 }
 
